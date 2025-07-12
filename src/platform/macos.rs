@@ -330,6 +330,36 @@ pub fn get_active_app_name() -> String {
     }
 }
 
+pub fn get_running_applications() -> Vec<String> {
+    unsafe {
+        let shared_workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        let running_apps: id = msg_send![shared_workspace, runningApplications];
+        let count: usize = msg_send![running_apps, count];
+        
+        let mut apps = Vec::new();
+        for i in 0..count {
+            let app: id = msg_send![running_apps, objectAtIndex: i];
+            let bundle_url: id = msg_send![app, bundleURL];
+            if !bundle_url.is_null() {
+                let path: id = msg_send![bundle_url, path];
+                if let Some(app_path) = nsstring_to_string!(path) {
+                    // Extract app name from path (e.g., "/Applications/Safari.app" -> "Safari")
+                    if let Some(app_name) = app_path.split('/').last() {
+                        if app_name.ends_with(".app") {
+                            let clean_name = app_name.trim_end_matches(".app").to_string();
+                            if !clean_name.is_empty() && !apps.contains(&clean_name) {
+                                apps.push(clean_name);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        apps.sort();
+        apps
+    }
+}
+
 pub fn update_launch_on_login(is_enable: bool) -> Result<(), auto_launch::Error> {
     match is_enable {
         true => AUTO_LAUNCH.enable(),

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     input::{rebuild_keyboard_layout_map, TypingMethod, INPUT_STATE},
     platform::{
-        is_launch_on_login, update_launch_on_login, KeyModifier, SystemTray, SystemTrayMenuItemKey,
+        get_running_applications, is_launch_on_login, update_launch_on_login, KeyModifier, SystemTray, SystemTrayMenuItemKey,
         SYMBOL_ALT, SYMBOL_CTRL, SYMBOL_SHIFT, SYMBOL_SUPER,
     },
     UI_EVENT_SINK,
@@ -25,7 +25,9 @@ pub const SHOW_UI: Selector = Selector::new("gox-ui.show-ui");
 const DELETE_MACRO: Selector<String> = Selector::new("gox-ui.delete-macro");
 const ADD_MACRO: Selector = Selector::new("gox-ui.add-macro");
 const ADD_EXCLUDED_APP: Selector = Selector::new("gox-ui.add-excluded-app");
+const ADD_EXCLUDED_APP_BY_NAME: Selector<String> = Selector::new("gox-ui.add-excluded-app-by-name");
 const REMOVE_EXCLUDED_APP: Selector<String> = Selector::new("gox-ui.remove-excluded-app");
+const REFRESH_RUNNING_APPS: Selector = Selector::new("gox-ui.refresh-running-apps");
 pub const WINDOW_WIDTH: f64 = 335.0;
 pub const WINDOW_HEIGHT: f64 = 375.0;
 
@@ -94,7 +96,8 @@ pub struct UIDataAdapter {
     // Exclude apps config
     is_exclude_apps_enabled: bool,
     excluded_apps: Arc<Vec<String>>,
-    new_excluded_app: String,
+    running_apps: Arc<Vec<String>>,
+    selected_app_index: usize,
     // Macro config
     is_macro_enabled: bool,
     macro_table: Arc<Vec<MacroEntry>>,
@@ -121,7 +124,8 @@ impl UIDataAdapter {
             is_auto_toggle_enabled: false,
             is_exclude_apps_enabled: false,
             excluded_apps: Arc::new(Vec::new()),
-            new_excluded_app: String::new(),
+            running_apps: Arc::new(get_running_applications()),
+            selected_app_index: 0,
             is_macro_enabled: false,
             macro_table: Arc::new(Vec::new()),
             new_macro_from: String::new(),
@@ -296,16 +300,26 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
                     data.new_macro_to = String::new();
                     data.update();
                 }
-                if cmd.get(ADD_EXCLUDED_APP).is_some() && !data.new_excluded_app.is_empty() {
+                if cmd.get(ADD_EXCLUDED_APP).is_some() && data.selected_app_index < data.running_apps.len() {
+                    let app_name = &data.running_apps[data.selected_app_index];
                     unsafe {
-                        INPUT_STATE.add_excluded_app(&data.new_excluded_app);
+                        INPUT_STATE.add_excluded_app(app_name);
                     };
-                    data.new_excluded_app = String::new();
+                    data.update();
+                }
+                if let Some(app_name) = cmd.get(ADD_EXCLUDED_APP_BY_NAME) {
+                    unsafe {
+                        INPUT_STATE.add_excluded_app(app_name);
+                    };
                     data.update();
                 }
                 if let Some(app_name) = cmd.get(REMOVE_EXCLUDED_APP) {
                     unsafe { INPUT_STATE.remove_excluded_app(app_name) };
                     data.update();
+                }
+                if cmd.get(REFRESH_RUNNING_APPS).is_some() {
+                    data.running_apps = Arc::new(get_running_applications());
+                    data.selected_app_index = 0;
                 }
             }
             Event::WindowCloseRequested => {
@@ -721,26 +735,19 @@ pub fn excluded_apps_editor_ui_builder() -> impl Widget<UIDataAdapter> {
                     .padding(4.0)
             }))
             .lens(UIDataAdapter::excluded_apps)
-            .fix_height(200.0)
+            .fix_height(150.0)
             .border(druid::theme::BORDER_DARK, 1.0)
             .rounded(4.0)
             .padding(8.0),
         )
         .with_child(
             Flex::row()
-                .with_child(Label::new("Thêm ứng dụng:").padding(8.0))
+                .with_child(Label::new("Chọn ứng dụng để thêm:").padding(8.0))
                 .with_child(
-                    TextBox::new()
-                        .with_placeholder("Tên ứng dụng")
-                        .lens(UIDataAdapter::new_excluded_app)
-                        .expand_width()
-                        .padding(8.0),
-                )
-                .with_child(
-                    Button::new("Thêm")
-                        .fix_width(60.0)
+                    Button::new("Làm mới")
+                        .fix_width(80.0)
                         .on_click(|ctx, _, _| {
-                            ctx.submit_command(ADD_EXCLUDED_APP);
+                            ctx.submit_command(REFRESH_RUNNING_APPS);
                         })
                         .padding(8.0),
                 )
@@ -750,9 +757,35 @@ pub fn excluded_apps_editor_ui_builder() -> impl Widget<UIDataAdapter> {
                 .expand_width(),
         )
         .with_child(
+            Scroll::new(List::new(|| {
+                Flex::row()
+                    .with_child(
+                        Label::dynamic(|app_name: &String, _| app_name.clone())
+                            .expand_width()
+                            .padding(4.0),
+                    )
+                    .with_child(
+                        Button::new("Thêm")
+                            .fix_width(60.0)
+                            .on_click(|ctx, data: &mut String, _| {
+                                ctx.submit_command(ADD_EXCLUDED_APP_BY_NAME.with(data.clone()));
+                            })
+                            .padding(4.0),
+                    )
+                    .border(druid::theme::BORDER_DARK, 1.0)
+                    .rounded(4.0)
+                    .padding(4.0)
+            }))
+            .lens(UIDataAdapter::running_apps)
+            .fix_height(120.0)
+            .border(druid::theme::BORDER_DARK, 1.0)
+            .rounded(4.0)
+            .padding(8.0),
+        )
+        .with_child(
             Flex::row()
                 .with_child(
-                    Label::new("Gợi ý: Nhập tên ứng dụng chính xác như hiển thị trong hệ thống")
+                    Label::new("Chọn ứng dụng từ danh sách đang chạy ở trên để thêm vào danh sách loại trừ")
                         .with_text_size(11.0)
                         .with_text_color(druid::theme::PLACEHOLDER_COLOR)
                         .padding(8.0),
