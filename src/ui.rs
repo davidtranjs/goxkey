@@ -97,7 +97,8 @@ pub struct UIDataAdapter {
     is_exclude_apps_enabled: bool,
     excluded_apps: Arc<Vec<String>>,
     running_apps: Arc<Vec<String>>,
-    selected_app_index: usize,
+    app_search_text: String,
+    filtered_apps: Arc<Vec<String>>,
     // Macro config
     is_macro_enabled: bool,
     macro_table: Arc<Vec<MacroEntry>>,
@@ -125,7 +126,8 @@ impl UIDataAdapter {
             is_exclude_apps_enabled: false,
             excluded_apps: Arc::new(Vec::new()),
             running_apps: Arc::new(get_running_applications()),
-            selected_app_index: 0,
+            app_search_text: String::new(),
+            filtered_apps: Arc::new(get_running_applications()),
             is_macro_enabled: false,
             macro_table: Arc::new(Vec::new()),
             new_macro_from: String::new(),
@@ -153,6 +155,9 @@ impl UIDataAdapter {
             self.is_exclude_apps_enabled = INPUT_STATE.is_exclude_apps_enabled();
             self.excluded_apps = Arc::new(INPUT_STATE.get_excluded_apps());
             self.launch_on_login = is_launch_on_login();
+            
+            // Update filtered apps based on search text
+            self.update_filtered_apps();
             self.macro_table = Arc::new(
                 INPUT_STATE
                     .get_macro_table()
@@ -261,6 +266,20 @@ impl UIDataAdapter {
         }
         self.update();
     }
+
+    pub fn update_filtered_apps(&mut self) {
+        if self.app_search_text.is_empty() {
+            self.filtered_apps = self.running_apps.clone();
+        } else {
+            let search_text = self.app_search_text.to_lowercase();
+            let filtered: Vec<String> = self.running_apps
+                .iter()
+                .filter(|app| app.to_lowercase().contains(&search_text))
+                .cloned()
+                .collect();
+            self.filtered_apps = Arc::new(filtered);
+        }
+    }
 }
 
 pub struct UIController;
@@ -300,11 +319,12 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
                     data.new_macro_to = String::new();
                     data.update();
                 }
-                if cmd.get(ADD_EXCLUDED_APP).is_some() && data.selected_app_index < data.running_apps.len() {
-                    let app_name = &data.running_apps[data.selected_app_index];
+                if cmd.get(ADD_EXCLUDED_APP).is_some() && !data.app_search_text.is_empty() {
                     unsafe {
-                        INPUT_STATE.add_excluded_app(app_name);
+                        INPUT_STATE.add_excluded_app(&data.app_search_text);
                     };
+                    data.app_search_text = String::new();
+                    data.update_filtered_apps();
                     data.update();
                 }
                 if let Some(app_name) = cmd.get(ADD_EXCLUDED_APP_BY_NAME) {
@@ -319,7 +339,7 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
                 }
                 if cmd.get(REFRESH_RUNNING_APPS).is_some() {
                     data.running_apps = Arc::new(get_running_applications());
-                    data.selected_app_index = 0;
+                    data.update_filtered_apps();
                 }
             }
             Event::WindowCloseRequested => {
@@ -384,6 +404,13 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
 
             if old_data.is_exclude_apps_enabled != data.is_exclude_apps_enabled {
                 INPUT_STATE.toggle_exclude_apps_enabled();
+            }
+
+            // Update filtered apps when search text changes
+            if old_data.app_search_text != data.app_search_text {
+                let mut new_data = data.clone();
+                new_data.update_filtered_apps();
+                *data = new_data;
             }
         }
         child.update(ctx, old_data, data, env);
@@ -735,14 +762,14 @@ pub fn excluded_apps_editor_ui_builder() -> impl Widget<UIDataAdapter> {
                     .padding(4.0)
             }))
             .lens(UIDataAdapter::excluded_apps)
-            .fix_height(150.0)
+            .fix_height(120.0)
             .border(druid::theme::BORDER_DARK, 1.0)
             .rounded(4.0)
             .padding(8.0),
         )
         .with_child(
             Flex::row()
-                .with_child(Label::new("Chọn ứng dụng để thêm:").padding(8.0))
+                .with_child(Label::new("Tìm kiếm ứng dụng:").padding(8.0))
                 .with_child(
                     Button::new("Làm mới")
                         .fix_width(80.0)
@@ -757,27 +784,52 @@ pub fn excluded_apps_editor_ui_builder() -> impl Widget<UIDataAdapter> {
                 .expand_width(),
         )
         .with_child(
-            Scroll::new(List::new(|| {
-                Flex::row()
-                    .with_child(
-                        Label::dynamic(|app_name: &String, _| app_name.clone())
-                            .expand_width()
-                            .padding(4.0),
-                    )
-                    .with_child(
-                        Button::new("Thêm")
-                            .fix_width(60.0)
-                            .on_click(|ctx, data: &mut String, _| {
-                                ctx.submit_command(ADD_EXCLUDED_APP_BY_NAME.with(data.clone()));
-                            })
-                            .padding(4.0),
-                    )
-                    .border(druid::theme::BORDER_DARK, 1.0)
-                    .rounded(4.0)
-                    .padding(4.0)
-            }))
-            .lens(UIDataAdapter::running_apps)
-            .fix_height(120.0)
+            Flex::row()
+                .with_child(
+                    TextBox::new()
+                        .with_placeholder("Nhập tên ứng dụng để tìm kiếm...")
+                        .lens(UIDataAdapter::app_search_text)
+                        .expand_width()
+                        .padding(8.0),
+                )
+                .with_child(
+                    Button::new("Thêm")
+                        .fix_width(60.0)
+                        .on_click(|ctx, _, _| {
+                            ctx.submit_command(ADD_EXCLUDED_APP);
+                        })
+                        .padding(8.0),
+                )
+                .cross_axis_alignment(druid::widget::CrossAxisAlignment::Center)
+                .main_axis_alignment(druid::widget::MainAxisAlignment::SpaceBetween)
+                .must_fill_main_axis(true)
+                .expand_width(),
+        )
+        .with_child(
+            Container::new(
+                Scroll::new(List::new(|| {
+                    Flex::row()
+                        .with_child(
+                            Label::dynamic(|app_name: &String, _| app_name.clone())
+                                .expand_width()
+                                .padding(4.0),
+                        )
+                        .with_child(
+                            Button::new("Chọn")
+                                .fix_width(50.0)
+                                .on_click(|ctx, data: &mut String, _| {
+                                    ctx.submit_command(ADD_EXCLUDED_APP_BY_NAME.with(data.clone()));
+                                })
+                                .padding(4.0),
+                        )
+                        .background(druid::theme::BACKGROUND_LIGHT)
+                        .border(druid::theme::BORDER_DARK, 0.5)
+                        .rounded(2.0)
+                        .padding(2.0)
+                }))
+                .lens(UIDataAdapter::filtered_apps)
+                .fix_height(150.0)
+            )
             .border(druid::theme::BORDER_DARK, 1.0)
             .rounded(4.0)
             .padding(8.0),
@@ -785,7 +837,7 @@ pub fn excluded_apps_editor_ui_builder() -> impl Widget<UIDataAdapter> {
         .with_child(
             Flex::row()
                 .with_child(
-                    Label::new("Chọn ứng dụng từ danh sách đang chạy ở trên để thêm vào danh sách loại trừ")
+                    Label::new("Nhập tên ứng dụng vào ô tìm kiếm hoặc chọn từ danh sách gợi ý")
                         .with_text_size(11.0)
                         .with_text_color(druid::theme::PLACEHOLDER_COLOR)
                         .padding(8.0),
