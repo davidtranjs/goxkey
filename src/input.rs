@@ -167,6 +167,7 @@ pub struct InputState {
     previous_modifiers: KeyModifier,
     is_auto_toggle_enabled: bool,
     is_gox_mode_enabled: bool,
+    is_exclude_apps_enabled: bool,
 }
 
 impl InputState {
@@ -187,6 +188,7 @@ impl InputState {
             previous_modifiers: KeyModifier::empty(),
             is_auto_toggle_enabled: config.is_auto_toggle_enabled(),
             is_gox_mode_enabled: config.is_gox_mode_enabled(),
+            is_exclude_apps_enabled: config.is_exclude_apps_enabled(),
         }
     }
 
@@ -217,7 +219,19 @@ impl InputState {
     }
 
     pub fn is_enabled(&self) -> bool {
-        !self.temporary_disabled && self.enabled
+        if self.temporary_disabled {
+            return false;
+        }
+        
+        // Check if exclude apps feature is enabled and current app is excluded
+        if self.is_exclude_apps_enabled && self.enabled {
+            let config = CONFIG_MANAGER.lock().unwrap();
+            if config.is_excluded_app(&self.active_app) {
+                return false; // Disable Vietnamese input for excluded apps
+            }
+        }
+        
+        self.enabled
     }
 
     pub fn is_tracking(&self) -> bool {
@@ -478,5 +492,41 @@ impl InputState {
     pub fn is_allowed_word(&self, word: &str) -> bool {
         let config = CONFIG_MANAGER.lock().unwrap();
         return config.is_allowed_word(word);
+    }
+
+    pub fn is_exclude_apps_enabled(&self) -> bool {
+        self.is_exclude_apps_enabled
+    }
+
+    pub fn toggle_exclude_apps_enabled(&mut self) {
+        self.is_exclude_apps_enabled = !self.is_exclude_apps_enabled;
+        CONFIG_MANAGER
+            .lock()
+            .unwrap()
+            .set_exclude_apps_enabled(self.is_exclude_apps_enabled);
+    }
+
+    pub fn add_excluded_app(&mut self, app_name: &str) {
+        CONFIG_MANAGER
+            .lock()
+            .unwrap()
+            .add_excluded_app(app_name);
+    }
+
+    pub fn remove_excluded_app(&mut self, app_name: &str) {
+        CONFIG_MANAGER
+            .lock()
+            .unwrap()
+            .remove_excluded_app(app_name);
+    }
+
+    pub fn get_excluded_apps(&self) -> Vec<String> {
+        let config = CONFIG_MANAGER.lock().unwrap();
+        config.get_excluded_apps().clone()
+    }
+
+    pub fn is_current_app_excluded(&self) -> bool {
+        let config = CONFIG_MANAGER.lock().unwrap();
+        config.is_excluded_app(&self.active_app)
     }
 }

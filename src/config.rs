@@ -19,10 +19,12 @@ pub struct ConfigStore {
     method: String,
     vn_apps: Vec<String>,
     en_apps: Vec<String>,
+    excluded_apps: Vec<String>,
     is_macro_enabled: bool,
     macro_table: BTreeMap<String, String>,
     is_auto_toggle_enabled: bool,
     is_gox_mode_enabled: bool,
+    is_exclude_apps_enabled: bool,
     allowed_words: Vec<String>,
 }
 
@@ -64,6 +66,7 @@ impl ConfigStore {
         writeln!(file, "{} = {}", TYPING_METHOD_CONFIG_KEY, self.method)?;
         writeln!(file, "{} = {}", VN_APPS_CONFIG_KEY, self.vn_apps.join(","))?;
         writeln!(file, "{} = {}", EN_APPS_CONFIG_KEY, self.en_apps.join(","))?;
+        writeln!(file, "{} = {}", EXCLUDED_APPS_CONFIG_KEY, self.excluded_apps.join(","))?;
         writeln!(
             file,
             "{} = {}",
@@ -88,6 +91,11 @@ impl ConfigStore {
             "{} = {}",
             GOX_MODE_CONFIG_KEY, self.is_gox_mode_enabled
         )?;
+        writeln!(
+            file,
+            "{} = {}",
+            EXCLUDE_APPS_ENABLED_CONFIG_KEY, self.is_exclude_apps_enabled
+        )?;
         Ok(())
     }
 
@@ -97,10 +105,12 @@ impl ConfigStore {
             method: "telex".to_string(),
             vn_apps: Vec::new(),
             en_apps: Vec::new(),
+            excluded_apps: Vec::new(),
             is_macro_enabled: false,
             macro_table: BTreeMap::new(),
             is_auto_toggle_enabled: false,
             is_gox_mode_enabled: false,
+            is_exclude_apps_enabled: false,
             allowed_words: vec!["đc".to_string()],
         };
 
@@ -115,6 +125,7 @@ impl ConfigStore {
                         TYPING_METHOD_CONFIG_KEY => config.method = right.to_string(),
                         VN_APPS_CONFIG_KEY => config.vn_apps = parse_vec_string(right.to_string()),
                         EN_APPS_CONFIG_KEY => config.en_apps = parse_vec_string(right.to_string()),
+                        EXCLUDED_APPS_CONFIG_KEY => config.excluded_apps = parse_vec_string(right.to_string()),
                         ALLOWED_WORDS_CONFIG_KEY => {
                             config.allowed_words = parse_vec_string(right.to_string())
                         }
@@ -131,6 +142,9 @@ impl ConfigStore {
                         }
                         GOX_MODE_CONFIG_KEY => {
                             config.is_gox_mode_enabled = matches!(right.trim(), "true")
+                        }
+                        EXCLUDE_APPS_ENABLED_CONFIG_KEY => {
+                            config.is_exclude_apps_enabled = matches!(right.trim(), "true")
                         }
                         _ => {}
                     }
@@ -184,6 +198,35 @@ impl ConfigStore {
             self.vn_apps.retain(|x| x != app_name);
         }
         self.en_apps.push(app_name.to_string());
+        self.save();
+    }
+
+    pub fn is_excluded_app(&self, app_name: &str) -> bool {
+        self.excluded_apps.contains(&app_name.to_string())
+    }
+
+    pub fn add_excluded_app(&mut self, app_name: &str) {
+        if !self.is_excluded_app(app_name) {
+            self.excluded_apps.push(app_name.to_string());
+            self.save();
+        }
+    }
+
+    pub fn remove_excluded_app(&mut self, app_name: &str) {
+        self.excluded_apps.retain(|x| x != app_name);
+        self.save();
+    }
+
+    pub fn get_excluded_apps(&self) -> &Vec<String> {
+        &self.excluded_apps
+    }
+
+    pub fn is_exclude_apps_enabled(&self) -> bool {
+        self.is_exclude_apps_enabled
+    }
+
+    pub fn set_exclude_apps_enabled(&mut self, flag: bool) {
+        self.is_exclude_apps_enabled = flag;
         self.save();
     }
 
@@ -242,8 +285,10 @@ const HOTKEY_CONFIG_KEY: &str = "hotkey";
 const TYPING_METHOD_CONFIG_KEY: &str = "method";
 const VN_APPS_CONFIG_KEY: &str = "vn-apps";
 const EN_APPS_CONFIG_KEY: &str = "en-apps";
+const EXCLUDED_APPS_CONFIG_KEY: &str = "excluded-apps";
 const MACRO_ENABLED_CONFIG_KEY: &str = "is_macro_enabled";
 const AUTOS_TOGGLE_ENABLED_CONFIG_KEY: &str = "is_auto_toggle_enabled";
 const MACROS_CONFIG_KEY: &str = "macros";
 const GOX_MODE_CONFIG_KEY: &str = "is_gox_mode_enabled";
+const EXCLUDE_APPS_ENABLED_CONFIG_KEY: &str = "is_exclude_apps_enabled";
 const ALLOWED_WORDS_CONFIG_KEY: &str = "allowed_words";

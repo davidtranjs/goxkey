@@ -24,6 +24,8 @@ pub const UPDATE_UI: Selector = Selector::new("gox-ui.update-ui");
 pub const SHOW_UI: Selector = Selector::new("gox-ui.show-ui");
 const DELETE_MACRO: Selector<String> = Selector::new("gox-ui.delete-macro");
 const ADD_MACRO: Selector = Selector::new("gox-ui.add-macro");
+const ADD_EXCLUDED_APP: Selector = Selector::new("gox-ui.add-excluded-app");
+const REMOVE_EXCLUDED_APP: Selector<String> = Selector::new("gox-ui.remove-excluded-app");
 pub const WINDOW_WIDTH: f64 = 335.0;
 pub const WINDOW_HEIGHT: f64 = 375.0;
 
@@ -89,6 +91,10 @@ pub struct UIDataAdapter {
     hotkey_display: String,
     launch_on_login: bool,
     is_auto_toggle_enabled: bool,
+    // Exclude apps config
+    is_exclude_apps_enabled: bool,
+    excluded_apps: Arc<Vec<String>>,
+    new_excluded_app: String,
     // Macro config
     is_macro_enabled: bool,
     macro_table: Arc<Vec<MacroEntry>>,
@@ -113,6 +119,9 @@ impl UIDataAdapter {
             hotkey_display: String::new(),
             launch_on_login: false,
             is_auto_toggle_enabled: false,
+            is_exclude_apps_enabled: false,
+            excluded_apps: Arc::new(Vec::new()),
+            new_excluded_app: String::new(),
             is_macro_enabled: false,
             macro_table: Arc::new(Vec::new()),
             new_macro_from: String::new(),
@@ -137,6 +146,8 @@ impl UIDataAdapter {
             self.hotkey_display = INPUT_STATE.get_hotkey().to_string();
             self.is_macro_enabled = INPUT_STATE.is_macro_enabled();
             self.is_auto_toggle_enabled = INPUT_STATE.is_auto_toggle_enabled();
+            self.is_exclude_apps_enabled = INPUT_STATE.is_exclude_apps_enabled();
+            self.excluded_apps = Arc::new(INPUT_STATE.get_excluded_apps());
             self.launch_on_login = is_launch_on_login();
             self.macro_table = Arc::new(
                 INPUT_STATE
@@ -285,6 +296,17 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
                     data.new_macro_to = String::new();
                     data.update();
                 }
+                if cmd.get(ADD_EXCLUDED_APP).is_some() && !data.new_excluded_app.is_empty() {
+                    unsafe {
+                        INPUT_STATE.add_excluded_app(&data.new_excluded_app);
+                    };
+                    data.new_excluded_app = String::new();
+                    data.update();
+                }
+                if let Some(app_name) = cmd.get(REMOVE_EXCLUDED_APP) {
+                    unsafe { INPUT_STATE.remove_excluded_app(app_name) };
+                    data.update();
+                }
             }
             Event::WindowCloseRequested => {
                 ctx.set_handled();
@@ -344,6 +366,10 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
 
             if old_data.is_auto_toggle_enabled != data.is_auto_toggle_enabled {
                 INPUT_STATE.toggle_auto_toggle();
+            }
+
+            if old_data.is_exclude_apps_enabled != data.is_exclude_apps_enabled {
+                INPUT_STATE.toggle_exclude_apps_enabled();
             }
         }
         child.update(ctx, old_data, data, env);
@@ -407,6 +433,36 @@ pub fn main_ui_builder() -> impl Widget<UIDataAdapter> {
                             )
                             .cross_axis_alignment(druid::widget::CrossAxisAlignment::Start)
                             .main_axis_alignment(druid::widget::MainAxisAlignment::SpaceBetween)
+                            .must_fill_main_axis(true)
+                            .expand_width()
+                            .padding(8.0),
+                    )
+                    .with_child(
+                        Flex::row()
+                            .with_child(Label::new("Loại trừ ứng dụng"))
+                            .with_child(
+                                Checkbox::new("").lens(UIDataAdapter::is_exclude_apps_enabled),
+                            )
+                            .cross_axis_alignment(druid::widget::CrossAxisAlignment::Start)
+                            .main_axis_alignment(druid::widget::MainAxisAlignment::SpaceBetween)
+                            .must_fill_main_axis(true)
+                            .expand_width()
+                            .padding(8.0),
+                    )
+                    .with_child(
+                        Flex::row()
+                            .with_child(Button::new("Quản lý ứng dụng loại trừ").on_click(|ctx, _, _| {
+                                let new_win_position = ctx.window().get_position() - (50.0, 50.0); // offset a bit
+                                let new_window = WindowDesc::new(excluded_apps_editor_ui_builder())
+                                    .title("Quản lý ứng dụng loại trừ")
+                                    .window_size((400.0, 350.0))
+                                    .with_min_size((400.0, 350.0))
+                                    .set_always_on_top(true)
+                                    .set_position(new_win_position);
+                                ctx.new_window(new_window);
+                            }))
+                            .cross_axis_alignment(druid::widget::CrossAxisAlignment::Start)
+                            .main_axis_alignment(druid::widget::MainAxisAlignment::End)
                             .must_fill_main_axis(true)
                             .expand_width()
                             .padding(8.0),
@@ -633,6 +689,97 @@ fn macro_row_item() -> impl Widget<MacroEntry> {
         .cross_axis_alignment(druid::widget::CrossAxisAlignment::Baseline)
         .expand_width()
         .border(Color::GRAY, 0.5)
+}
+
+pub fn excluded_apps_editor_ui_builder() -> impl Widget<UIDataAdapter> {
+    Flex::column()
+        .cross_axis_alignment(druid::widget::CrossAxisAlignment::Start)
+        .main_axis_alignment(druid::widget::MainAxisAlignment::Start)
+        .with_child(
+            Label::new("Danh sách ứng dụng loại trừ:")
+                .with_text_size(14.0)
+                .padding(8.0),
+        )
+        .with_child(
+            Scroll::new(List::new(|| {
+                Flex::row()
+                    .with_child(
+                        Label::dynamic(|app_name: &String, _| app_name.clone())
+                            .expand_width()
+                            .padding(4.0),
+                    )
+                    .with_child(
+                        Button::new("Xóa")
+                            .fix_width(50.0)
+                            .on_click(|ctx, app_name: &mut String, _| {
+                                ctx.submit_command(REMOVE_EXCLUDED_APP.with(app_name.clone()));
+                            })
+                            .padding(4.0),
+                    )
+                    .border(druid::theme::BORDER_DARK, 1.0)
+                    .rounded(4.0)
+                    .padding(4.0)
+            }))
+            .lens(UIDataAdapter::excluded_apps)
+            .fix_height(200.0)
+            .border(druid::theme::BORDER_DARK, 1.0)
+            .rounded(4.0)
+            .padding(8.0),
+        )
+        .with_child(
+            Flex::row()
+                .with_child(Label::new("Thêm ứng dụng:").padding(8.0))
+                .with_child(
+                    TextBox::new()
+                        .with_placeholder("Tên ứng dụng")
+                        .lens(UIDataAdapter::new_excluded_app)
+                        .expand_width()
+                        .padding(8.0),
+                )
+                .with_child(
+                    Button::new("Thêm")
+                        .fix_width(60.0)
+                        .on_click(|ctx, _, _| {
+                            ctx.submit_command(ADD_EXCLUDED_APP);
+                        })
+                        .padding(8.0),
+                )
+                .cross_axis_alignment(druid::widget::CrossAxisAlignment::Center)
+                .main_axis_alignment(druid::widget::MainAxisAlignment::SpaceBetween)
+                .must_fill_main_axis(true)
+                .expand_width(),
+        )
+        .with_child(
+            Flex::row()
+                .with_child(
+                    Label::new("Gợi ý: Nhập tên ứng dụng chính xác như hiển thị trong hệ thống")
+                        .with_text_size(11.0)
+                        .with_text_color(druid::theme::PLACEHOLDER_COLOR)
+                        .padding(8.0),
+                )
+                .cross_axis_alignment(druid::widget::CrossAxisAlignment::Start)
+                .main_axis_alignment(druid::widget::MainAxisAlignment::Start)
+                .must_fill_main_axis(true)
+                .expand_width(),
+        )
+        .with_spacer(16.0)
+        .with_child(
+            Flex::row()
+                .with_child(
+                    Button::new("Đóng")
+                        .fix_width(100.0)
+                        .fix_height(28.0)
+                        .on_click(|ctx, _, _| {
+                            ctx.window().close();
+                        }),
+                )
+                .cross_axis_alignment(druid::widget::CrossAxisAlignment::End)
+                .main_axis_alignment(druid::widget::MainAxisAlignment::End)
+                .must_fill_main_axis(true)
+                .expand_width(),
+        )
+        .padding(8.0)
+        .controller(UIController)
 }
 
 pub fn center_window_position() -> (f64, f64) {
