@@ -28,6 +28,7 @@ const ADD_EXCLUDED_APP: Selector = Selector::new("gox-ui.add-excluded-app");
 const ADD_EXCLUDED_APP_BY_NAME: Selector<String> = Selector::new("gox-ui.add-excluded-app-by-name");
 const REMOVE_EXCLUDED_APP: Selector<String> = Selector::new("gox-ui.remove-excluded-app");
 const REFRESH_RUNNING_APPS: Selector = Selector::new("gox-ui.refresh-running-apps");
+const UPDATE_FILTERED_APPS: Selector = Selector::new("gox-ui.update-filtered-apps");
 pub const WINDOW_WIDTH: f64 = 335.0;
 pub const WINDOW_HEIGHT: f64 = 375.0;
 
@@ -77,6 +78,25 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for LetterKeyControl
             }
         }
         child.event(ctx, event, data, env)
+    }
+}
+
+struct SearchTextController;
+impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for SearchTextController {
+    fn event(
+        &mut self,
+        child: &mut W,
+        ctx: &mut EventCtx,
+        event: &Event,
+        data: &mut UIDataAdapter,
+        env: &Env,
+    ) {
+        child.event(ctx, event, data, env);
+        
+        // Trigger filtering when text changes
+        if let Event::KeyUp(_) = event {
+            ctx.submit_command(UPDATE_FILTERED_APPS);
+        }
     }
 }
 
@@ -155,9 +175,6 @@ impl UIDataAdapter {
             self.is_exclude_apps_enabled = INPUT_STATE.is_exclude_apps_enabled();
             self.excluded_apps = Arc::new(INPUT_STATE.get_excluded_apps());
             self.launch_on_login = is_launch_on_login();
-            
-            // Update filtered apps based on search text
-            self.update_filtered_apps();
             self.macro_table = Arc::new(
                 INPUT_STATE
                     .get_macro_table()
@@ -341,6 +358,9 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
                     data.running_apps = Arc::new(get_running_applications());
                     data.update_filtered_apps();
                 }
+                if cmd.get(UPDATE_FILTERED_APPS).is_some() {
+                    data.update_filtered_apps();
+                }
             }
             Event::WindowCloseRequested => {
                 ctx.set_handled();
@@ -404,13 +424,6 @@ impl<W: Widget<UIDataAdapter>> Controller<UIDataAdapter, W> for UIController {
 
             if old_data.is_exclude_apps_enabled != data.is_exclude_apps_enabled {
                 INPUT_STATE.toggle_exclude_apps_enabled();
-            }
-
-            // Update filtered apps when search text changes
-            if old_data.app_search_text != data.app_search_text {
-                let mut new_data = data.clone();
-                new_data.update_filtered_apps();
-                *data = new_data;
             }
         }
         child.update(ctx, old_data, data, env);
@@ -789,6 +802,7 @@ pub fn excluded_apps_editor_ui_builder() -> impl Widget<UIDataAdapter> {
                     TextBox::new()
                         .with_placeholder("Nhập tên ứng dụng để tìm kiếm...")
                         .lens(UIDataAdapter::app_search_text)
+                        .controller(SearchTextController)
                         .expand_width()
                         .padding(8.0),
                 )
