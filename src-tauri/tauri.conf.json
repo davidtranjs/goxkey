@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "GõKey",
+    "version": "0.2.9"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": true
+    },
+    "windows": [
+      {
+        "title": "GõKey",
+        "width": 960,
+        "height": 720,
+        "resizable": false,
+        "fullscreen": false
+      }
+    ],
+    "bundle": {
+      "identifier": "com.goxkey.app",
+      "icons": [
+        "../icons/icon.icns",
+        "../icons/icon.png"
+      ]
+    }
+  }
+}

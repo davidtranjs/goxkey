@@ -9,7 +9,6 @@ use core_graphics::{
     event::{CGEventTapProxy, CGKeyCode},
     sys,
 };
-use druid::{Data, Lens};
 use libc::c_void;
 use objc::{
     class,
@@ -24,12 +23,6 @@ use std::mem;
 
 #[derive(Clone, PartialEq, Eq)]
 struct Wrapper(*mut objc::runtime::Object);
-impl Data for Wrapper {
-    fn same(&self, _other: &Self) -> bool {
-        true
-    }
-}
-
 pub enum SystemTrayMenuItemKey {
     ShowUI,
     Enable,
@@ -38,7 +31,7 @@ pub enum SystemTrayMenuItemKey {
     Exit,
 }
 
-#[derive(Clone, Data, Lens, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SystemTray {
     _pool: Wrapper,
     menu: Wrapper,

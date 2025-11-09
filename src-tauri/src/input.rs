@@ -1,17 +1,14 @@
 use std::collections::BTreeMap;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
-use druid::{Data, Target};
 use log::debug;
 use once_cell::sync::{Lazy, OnceCell};
 use rdev::{Keyboard, KeyboardState};
+use serde::{Deserialize, Serialize};
 use vi::TransformResult;
 
 use crate::platform::{get_active_app_name, KeyModifier};
-use crate::{
-    config::CONFIG_MANAGER, hotkey::Hotkey, platform::is_in_text_selection, ui::UPDATE_UI,
-    UI_EVENT_SINK,
-};
+use crate::{app_handle, config::CONFIG_MANAGER, hotkey::Hotkey, platform::is_in_text_selection};
 
 // According to Google search, the longest possible Vietnamese word
 // is "nghiêng", which is 7 letters long. Add a little buffer for
@@ -122,7 +119,7 @@ pub fn rebuild_keyboard_layout_map() {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(PartialEq, Eq, Data, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub enum TypingMethod {
     VNI,
     Telex,
@@ -277,9 +274,7 @@ impl InputState {
             .lock()
             .unwrap()
             .set_method(&method.to_string());
-        if let Some(event_sink) = UI_EVENT_SINK.get() {
-            _ = event_sink.submit_command(UPDATE_UI, (), Target::Auto);
-        }
+        app_handle::emit_update_ui();
     }
 
     pub fn get_method(&self) -> TypingMethod {
@@ -289,9 +284,7 @@ impl InputState {
     pub fn set_hotkey(&mut self, key_sequence: &str) {
         self.hotkey = Hotkey::from_str(key_sequence);
         CONFIG_MANAGER.lock().unwrap().set_hotkey(key_sequence);
-        if let Some(event_sink) = UI_EVENT_SINK.get() {
-            _ = event_sink.submit_command(UPDATE_UI, (), Target::Auto);
-        }
+        app_handle::emit_update_ui();
     }
 
     pub fn get_hotkey(&self) -> &Hotkey {
