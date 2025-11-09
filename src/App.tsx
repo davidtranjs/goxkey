@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -48,6 +48,8 @@ interface HotkeyUpdate {
   capslock_key: boolean;
   letter_key: string;
 }
+
+type ModifierKey = Exclude<keyof HotkeyUpdate, "letter_key">;
 
 const defaultHotkey: HotkeyUpdate = {
   super_key: false,
@@ -337,8 +339,15 @@ function App(): JSX.Element {
             </p>
             <form className="mt-4 space-y-4" onSubmit={updateHotkey}>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {["super_key", "ctrl_key", "alt_key", "shift_key", "capslock_key"].map((key) => {
-                  const labelMap: Record<string, string> = {
+                {([
+                  "super_key",
+                  "ctrl_key",
+                  "alt_key",
+                  "shift_key",
+                  "capslock_key"
+                ] as const).map((key) => {
+                  const modifierKey: ModifierKey = key;
+                  const labelMap: Record<ModifierKey, string> = {
                     super_key: `${snapshot.symbols.super_key} Super`,
                     ctrl_key: `${snapshot.symbols.ctrl_key} Control`,
                     alt_key: `${snapshot.symbols.alt_key} Option`,
@@ -346,17 +355,17 @@ function App(): JSX.Element {
                     capslock_key: "Caps Lock"
                   };
                   return (
-                    <label key={key} className="flex items-center gap-2">
+                    <label key={modifierKey} className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
-                        checked={(hotkeyForm as Record<string, boolean>)[key] ?? false}
+                        checked={hotkeyForm[modifierKey] ?? false}
                         onChange={(event) =>
-                          setHotkeyForm((current) => ({ ...current, [key]: event.target.checked }))
+                          setHotkeyForm((current) => ({ ...current, [modifierKey]: event.target.checked }))
                         }
                         disabled={busy}
                       />
-                      <span>{labelMap[key]}</span>
+                      <span>{labelMap[modifierKey]}</span>
                     </label>
                   );
                 })}

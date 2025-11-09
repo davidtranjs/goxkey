@@ -1,4 +1,6 @@
 /target
+/node_modules
+.pnpm-store
 .DS_Store
 .idea/node_modules
 /dist
