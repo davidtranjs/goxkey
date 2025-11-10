@@ -28,6 +28,7 @@ export default {
           DEFAULT: "#0891b2",
           dark: "#0e7490",
         },
+        base: "#87cee9",
       },
       borderRadius: {
         lg: "var(--radius)",
