@@ -26,7 +26,7 @@ use platform::{
 };
 use state::{TypingMethodDto, UiState};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder, WindowEvent};
 
 fn do_transform_keys(handle: Handle, is_delete: bool) -> bool {
     unsafe {
@@ -464,6 +464,12 @@ fn main() {
     rebuild_keyboard_layout_map();
 
     tauri::Builder::default()
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .setup(|app| {
             events::register_app_handle(&app.handle());
             let has_permission = ensure_accessibility_permission();
