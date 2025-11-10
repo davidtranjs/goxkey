@@ -10,6 +10,8 @@ use std::{
 
 use once_cell::sync::Lazy;
 
+use crate::apps::AppInfo;
+
 use crate::platform::get_home_dir;
 
 pub static CONFIG_MANAGER: Lazy<Mutex<ConfigStore>> = Lazy::new(|| Mutex::new(ConfigStore::new()));
@@ -27,6 +29,8 @@ pub struct ConfigStore {
     show_menubar_icon: bool,
     theme: String,
     is_vietnamese_mode_enabled: bool,
+    excluded_apps: Vec<AppInfo>,
+    exclude_apps_enabled: bool,
 }
 
 fn parse_vec_string(line: String) -> Vec<String> {
@@ -106,6 +110,17 @@ impl ConfigStore {
             "{} = {}",
             VIETNAMESE_MODE_ENABLED_CONFIG_KEY, self.is_vietnamese_mode_enabled
         )?;
+        writeln!(
+            file,
+            "{} = {}",
+            EXCLUDED_APPS_CONFIG_KEY,
+            serde_json::to_string(&self.excluded_apps).unwrap_or_else(|_| "[]".to_string())
+        )?;
+        writeln!(
+            file,
+            "{} = {}",
+            EXCLUDE_APPS_ENABLED_CONFIG_KEY, self.exclude_apps_enabled
+        )?;
         Ok(())
     }
 
@@ -123,6 +138,8 @@ impl ConfigStore {
             show_menubar_icon: true,
             theme: "system".to_string(),
             is_vietnamese_mode_enabled: true,
+            excluded_apps: Vec::new(),
+            exclude_apps_enabled: true,
         };
 
         let config_path = ConfigStore::get_config_path();
@@ -161,6 +178,12 @@ impl ConfigStore {
                         }
                         VIETNAMESE_MODE_ENABLED_CONFIG_KEY => {
                             config.is_vietnamese_mode_enabled = matches!(right.trim(), "true")
+                        }
+                        EXCLUDED_APPS_CONFIG_KEY => {
+                            config.excluded_apps = serde_json::from_str(right).unwrap_or_default();
+                        }
+                        EXCLUDE_APPS_ENABLED_CONFIG_KEY => {
+                            config.exclude_apps_enabled = matches!(right.trim(), "true")
                         }
                         _ => {}
                     }
@@ -289,6 +312,30 @@ impl ConfigStore {
         self.save();
     }
 
+    pub fn get_excluded_apps(&self) -> &Vec<AppInfo> {
+        &self.excluded_apps
+    }
+
+    pub fn add_excluded_app(&mut self, app: AppInfo) {
+        self.excluded_apps.retain(|item| item.path != app.path && item.identifier != app.identifier);
+        self.excluded_apps.push(app);
+        self.save();
+    }
+
+    pub fn remove_excluded_app(&mut self, path: &str) {
+        self.excluded_apps.retain(|item| item.path != path);
+        self.save();
+    }
+
+    pub fn is_exclude_apps_enabled(&self) -> bool {
+        self.exclude_apps_enabled
+    }
+
+    pub fn set_exclude_apps_enabled(&mut self, flag: bool) {
+        self.exclude_apps_enabled = flag;
+        self.save();
+    }
+
     // Save config to file
     fn save(&mut self) {
         self.write_config_data().expect("Failed to write config");
@@ -307,3 +354,5 @@ const ALLOWED_WORDS_CONFIG_KEY: &str = "allowed_words";
 const SHOW_MENUBAR_ICON_CONFIG_KEY: &str = "show_menubar_icon";
 const THEME_CONFIG_KEY: &str = "theme";
 const VIETNAMESE_MODE_ENABLED_CONFIG_KEY: &str = "is_vietnamese_mode_enabled";
+const EXCLUDED_APPS_CONFIG_KEY: &str = "excluded_apps";
+const EXCLUDE_APPS_ENABLED_CONFIG_KEY: &str = "exclude_apps_enabled";

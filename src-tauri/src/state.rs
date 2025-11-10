@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::apps::AppInfo;
 use crate::config::CONFIG_MANAGER;
 use crate::input::{TypingMethod, INPUT_STATE};
 use crate::platform::is_launch_on_login;
@@ -65,6 +66,8 @@ pub struct UiState {
     pub show_menubar_icon: bool,
     pub theme: String,
     pub vietnamese_mode_enabled: bool,
+    pub excluded_apps: Vec<AppInfo>,
+    pub exclude_apps_enabled: bool,
 }
 
 impl UiState {
@@ -103,6 +106,16 @@ impl UiState {
                 .map(|c| c.is_vietnamese_mode_enabled())
                 .unwrap_or(true);
 
+            let excluded_apps = CONFIG_MANAGER
+                .lock()
+                .map(|c| c.get_excluded_apps().clone())
+                .unwrap_or_default();
+
+            let exclude_apps_enabled = CONFIG_MANAGER
+                .lock()
+                .map(|c| c.is_exclude_apps_enabled())
+                .unwrap_or(true);
+
             Self {
                 is_enabled: input_state.is_enabled(),
                 typing_method: input_state.get_method().into(),
@@ -118,6 +131,8 @@ impl UiState {
                 show_menubar_icon,
                 theme,
                 vietnamese_mode_enabled,
+                excluded_apps,
+                exclude_apps_enabled,
             }
         }
     }

@@ -7,9 +7,11 @@ mod input;
 mod platform;
 mod scripting;
 mod state;
+mod apps;
 
 use std::thread;
 
+use crate::apps::AppInfo;
 use crate::hotkey::Hotkey;
 use input::{
     rebuild_keyboard_layout_map, HOTKEY_MATCHING, HOTKEY_MATCHING_CIRCUIT_BREAK, HOTKEY_MODIFIERS,
@@ -83,10 +85,10 @@ unsafe fn toggle_vietnamese() {
 }
 
 unsafe fn auto_toggle_vietnamese() {
-    if !INPUT_STATE.is_auto_toggle_enabled() {
-        return;
-    }
-    let has_change = INPUT_STATE.update_active_app().is_some();
+    let apply_auto = INPUT_STATE.is_auto_toggle_enabled();
+    let has_change = INPUT_STATE
+        .update_active_app(apply_auto)
+        .is_some();
     if !has_change {
         return;
     }
@@ -353,6 +355,15 @@ fn set_macro_enabled(enabled: bool) -> UiState {
 }
 
 #[tauri::command]
+fn set_exclude_apps_enabled(enabled: bool) -> UiState {
+    unsafe {
+        INPUT_STATE.set_exclude_apps_enabled(enabled);
+    }
+    events::emit_state_changed();
+    events::current_state()
+}
+
+#[tauri::command]
 fn add_macro(source: String, target: String) -> UiState {
     if source.trim().is_empty() || target.trim().is_empty() {
         return events::current_state();
@@ -368,6 +379,24 @@ fn add_macro(source: String, target: String) -> UiState {
 fn delete_macro(source: String) -> UiState {
     unsafe {
         INPUT_STATE.delete_macro(&source);
+    }
+    events::emit_state_changed();
+    events::current_state()
+}
+
+#[tauri::command]
+fn add_excluded_app(app: AppInfo) -> UiState {
+    unsafe {
+        INPUT_STATE.add_excluded_app(app);
+    }
+    events::emit_state_changed();
+    events::current_state()
+}
+
+#[tauri::command]
+fn remove_excluded_app(path: String) -> UiState {
+    unsafe {
+        INPUT_STATE.remove_excluded_app(&path);
     }
     events::emit_state_changed();
     events::current_state()
@@ -410,6 +439,11 @@ fn set_theme(theme: String) -> UiState {
 
     events::emit_state_changed();
     events::current_state()
+}
+
+#[tauri::command]
+fn search_apps(query: Option<String>) -> Vec<AppInfo> {
+    apps::search_apps(query.as_deref())
 }
 
 fn show_main_window(app: &AppHandle) {
@@ -497,9 +531,13 @@ fn main() {
             set_macro_enabled,
             add_macro,
             delete_macro,
+            add_excluded_app,
+            remove_excluded_app,
             set_launch_on_login,
             set_show_menubar_icon,
-            set_theme
+            set_theme,
+            set_exclude_apps_enabled,
+            search_apps
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

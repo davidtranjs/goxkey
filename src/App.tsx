@@ -13,6 +13,7 @@ import {
   ThemeSelector,
   MacroForm,
   MacroList,
+  ExcludedAppsSection,
 } from "./components"
 import { Card } from "./components/card"
 
@@ -204,6 +205,20 @@ export default function App() {
                 <HotkeyConfig
                   currentHotkey={state.hotkey.display}
                   onSave={saveHotkey}
+                />
+
+                <ExcludedAppsSection
+                  excludeAppsEnabled={state.excludeAppsEnabled}
+                  excludedApps={state.excludedApps}
+                  onToggle={() =>
+                    runCommand(() =>
+                      ipc.setExcludeAppsEnabled(!state.excludeAppsEnabled)
+                    )
+                  }
+                  onAdd={(app) => runCommand(() => ipc.addExcludedApp(app))}
+                  onRemove={(path) =>
+                    runCommand(() => ipc.removeExcludedApp(path))
+                  }
                 />
 
                 <section className="mt-4">

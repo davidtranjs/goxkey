@@ -464,9 +464,30 @@ pub fn get_active_app_name() -> String {
     unsafe {
         let shared_workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
         let front_most_app: id = msg_send![shared_workspace, frontmostApplication];
+        if front_most_app == nil {
+            return "/Unknown.app".to_string();
+        }
         let bundle_url: id = msg_send![front_most_app, bundleURL];
+        if bundle_url == nil {
+            return "/Unknown.app".to_string();
+        }
         let path: id = msg_send![bundle_url, path];
         nsstring_to_string!(path).unwrap_or("/Unknown.app".to_string())
+    }
+}
+
+pub fn get_active_app_identifier() -> Option<String> {
+    unsafe {
+        let shared_workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        let front_most_app: id = msg_send![shared_workspace, frontmostApplication];
+        if front_most_app == nil {
+            return None;
+        }
+        let identifier: id = msg_send![front_most_app, bundleIdentifier];
+        if identifier == nil {
+            return None;
+        }
+        nsstring_to_string!(identifier)
     }
 }
 

@@ -7,4 +7,4 @@ export { HotkeyConfig } from "./HotkeyConfig";
 export { ThemeSelector } from "./ThemeSelector";
 export { MacroForm } from "./MacroForm";
 export { MacroList } from "./MacroList";
-
+export { ExcludedAppsSection } from "./ExcludedAppsSection";

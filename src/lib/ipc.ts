@@ -23,6 +23,12 @@ export type MacroEntry = {
   target: string;
 };
 
+export type AppInfo = {
+  identifier: string;
+  name: string;
+  path: string;
+};
+
 export type UiState = {
   isEnabled: boolean;
   typingMethod: TypingMethod;
@@ -37,6 +43,9 @@ export type UiState = {
   version: string;
   showMenubarIcon: boolean;
   theme: string;
+  vietnameseModeEnabled: boolean;
+  excludedApps: AppInfo[];
+  excludeAppsEnabled: boolean;
 };
 
 async function invokeCommand<T>(
@@ -78,6 +87,9 @@ export const ipc = {
   setMacroEnabled: (enabled: boolean) =>
     invokeCommand<UiState>("set_macro_enabled", { enabled }),
 
+  setExcludeAppsEnabled: (enabled: boolean) =>
+    invokeCommand<UiState>("set_exclude_apps_enabled", { enabled }),
+
   setTheme: (theme: string) =>
     invokeCommand<UiState>("set_theme", { theme }),
 
@@ -86,5 +98,12 @@ export const ipc = {
 
   deleteMacro: (source: string) =>
     invokeCommand<UiState>("delete_macro", { source }),
-};
 
+  addExcludedApp: (app: AppInfo) =>
+    invokeCommand<UiState>("add_excluded_app", { app }),
+
+  removeExcludedApp: (path: string) =>
+    invokeCommand<UiState>("remove_excluded_app", { path }),
+
+  searchApps: (query?: string) => invokeCommand<AppInfo[]>("search_apps", { query }),
+};

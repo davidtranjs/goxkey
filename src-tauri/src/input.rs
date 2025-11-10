@@ -6,7 +6,8 @@ use once_cell::sync::{Lazy, OnceCell};
 use rdev::{Keyboard, KeyboardState};
 use vi::TransformResult;
 
-use crate::platform::{get_active_app_name, KeyModifier};
+use crate::apps::AppInfo;
+use crate::platform::{get_active_app_identifier, get_active_app_name, KeyModifier};
 use crate::{config::CONFIG_MANAGER, events, hotkey::Hotkey, platform::is_in_text_selection};
 
 // According to Google search, the longest possible Vietnamese word
@@ -157,18 +158,21 @@ pub struct InputState {
     should_track: bool,
     previous_word: String,
     active_app: String,
+    active_app_identifier: Option<String>,
     is_macro_enabled: bool,
     macro_table: BTreeMap<String, String>,
     temporary_disabled: bool,
     previous_modifiers: KeyModifier,
     is_auto_toggle_enabled: bool,
     is_gox_mode_enabled: bool,
+    excluded_apps: Vec<AppInfo>,
+    exclude_apps_enabled: bool,
 }
 
 impl InputState {
     pub fn new() -> Self {
         let config = CONFIG_MANAGER.lock().unwrap();
-        Self {
+        let mut state = Self {
             buffer: String::new(),
             display_buffer: String::new(),
             method: TypingMethod::from_str(config.get_method()).unwrap(),
@@ -177,29 +181,37 @@ impl InputState {
             should_track: true,
             previous_word: String::new(),
             active_app: String::new(),
+            active_app_identifier: None,
             is_macro_enabled: config.is_macro_enabled(),
             macro_table: config.get_macro_table().clone(),
             temporary_disabled: false,
             previous_modifiers: KeyModifier::empty(),
             is_auto_toggle_enabled: config.is_auto_toggle_enabled(),
             is_gox_mode_enabled: config.is_gox_mode_enabled(),
-        }
+            excluded_apps: config.get_excluded_apps().clone(),
+            exclude_apps_enabled: config.is_exclude_apps_enabled(),
+        };
+        state.update_active_app(false);
+        state
     }
 
-    pub fn update_active_app(&mut self) -> Option<()> {
+    pub fn update_active_app(&mut self, apply_auto_toggle: bool) -> Option<()> {
         let current_active_app = get_active_app_name();
         // Only check if switch app
         if current_active_app == self.active_app {
+            self.active_app_identifier = get_active_app_identifier();
             return None;
         }
         self.active_app = current_active_app;
-        let config = CONFIG_MANAGER.lock().unwrap();
-        // Only switch the input mode if we found the app in the config
-        if config.is_vietnamese_app(&self.active_app) {
-            self.enabled = true;
-        }
-        if config.is_english_app(&self.active_app) {
-            self.enabled = false;
+        self.active_app_identifier = get_active_app_identifier();
+        if apply_auto_toggle {
+            let config = CONFIG_MANAGER.lock().unwrap();
+            if config.is_vietnamese_app(&self.active_app) {
+                self.enabled = true;
+            }
+            if config.is_english_app(&self.active_app) {
+                self.enabled = false;
+            }
         }
         Some(())
     }
@@ -217,7 +229,7 @@ impl InputState {
     }
 
     pub fn is_enabled(&self) -> bool {
-        !self.temporary_disabled && self.enabled
+        !self.temporary_disabled && self.enabled && !self.is_current_app_excluded()
     }
 
     pub fn is_tracking(&self) -> bool {
@@ -341,7 +353,7 @@ impl InputState {
     }
 
     pub fn should_transform_keys(&self, _c: &char) -> bool {
-        self.enabled
+        self.is_enabled()
     }
 
     pub fn transform_keys(&self) -> Result<(String, TransformResult), ()> {
@@ -479,5 +491,39 @@ impl InputState {
     pub fn is_allowed_word(&self, word: &str) -> bool {
         let config = CONFIG_MANAGER.lock().unwrap();
         return config.is_allowed_word(word);
+    }
+
+    pub fn set_exclude_apps_enabled(&mut self, enabled: bool) {
+        self.exclude_apps_enabled = enabled;
+        CONFIG_MANAGER
+            .lock()
+            .unwrap()
+            .set_exclude_apps_enabled(enabled);
+        events::emit_state_changed();
+    }
+
+    pub fn add_excluded_app(&mut self, app: AppInfo) {
+        CONFIG_MANAGER.lock().unwrap().add_excluded_app(app.clone());
+        self.excluded_apps
+            .retain(|item| item.path != app.path && item.identifier != app.identifier);
+        self.excluded_apps.push(app);
+        events::emit_state_changed();
+    }
+
+    pub fn remove_excluded_app(&mut self, path: &str) {
+        CONFIG_MANAGER.lock().unwrap().remove_excluded_app(path);
+        self.excluded_apps.retain(|item| item.path != path);
+        events::emit_state_changed();
+    }
+
+    fn is_current_app_excluded(&self) -> bool {
+        if !self.exclude_apps_enabled {
+            return false;
+        }
+        let identifier = self.active_app_identifier.as_deref().unwrap_or("");
+        self
+            .excluded_apps
+            .iter()
+            .any(|item| item.path == self.active_app || (!identifier.is_empty() && item.identifier == identifier))
     }
 }
