@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use std::env::current_exe;
 use std::path::Path;
 use std::{env, path::PathBuf, ptr};

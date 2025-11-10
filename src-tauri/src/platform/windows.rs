@@ -1,7 +1,5 @@
 // TODO: Implement this
 
-use druid::{Selector, commands::CLOSE_WINDOW};
-
 use super::CallbackFn;
 
 pub const SYMBOL_SHIFT: &str = "⇧";

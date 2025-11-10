@@ -53,12 +53,12 @@ $ git clone https://github.com/huytd/goxkey && cd goxkey
 $ make setup
 ```
 
-After this step, you can use the `make` commands to run or bundle the code as needed:
+After this step you can use the Node/Tauri tasks to develop or bundle the app:
 
 ```sh
-$ make run
+# start the desktop shell with live-reloading UI and backend
+$ pnpm dev
 
-# or
-
-$ make bundle
+# produce signed binaries via Tauri bundler
+$ pnpm build
 ```

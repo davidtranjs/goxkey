@@ -1,0 +1,32 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "Gõ Key",
+  "version": "0.3.0",
+  "identifier": "com.goxkey.app",
+  "build": {
+    "beforeDevCommand": "pnpm run dev:ui",
+    "beforeBuildCommand": "pnpm run build:ui",
+    "frontendDist": "../dist",
+    "devUrl": "http://127.0.0.1:1420"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Gõ Key",
+        "width": 420,
+        "height": 640,
+        "resizable": false,
+        "fullscreen": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "category": "Productivity",
+    "targets": "all",
+    "icon": [
+      "../icons/icon.icns",
+      "../icons/icon.png"
+    ]
+  }
+}

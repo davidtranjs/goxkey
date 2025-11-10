@@ -24,6 +24,7 @@ pub struct ConfigStore {
     is_auto_toggle_enabled: bool,
     is_gox_mode_enabled: bool,
     allowed_words: Vec<String>,
+    show_menubar_icon: bool,
 }
 
 fn parse_vec_string(line: String) -> Vec<String> {
@@ -88,6 +89,11 @@ impl ConfigStore {
             "{} = {}",
             GOX_MODE_CONFIG_KEY, self.is_gox_mode_enabled
         )?;
+        writeln!(
+            file,
+            "{} = {}",
+            SHOW_MENUBAR_ICON_CONFIG_KEY, self.show_menubar_icon
+        )?;
         Ok(())
     }
 
@@ -102,6 +108,7 @@ impl ConfigStore {
             is_auto_toggle_enabled: false,
             is_gox_mode_enabled: false,
             allowed_words: vec!["đc".to_string()],
+            show_menubar_icon: true,
         };
 
         let config_path = ConfigStore::get_config_path();
@@ -131,6 +138,9 @@ impl ConfigStore {
                         }
                         GOX_MODE_CONFIG_KEY => {
                             config.is_gox_mode_enabled = matches!(right.trim(), "true")
+                        }
+                        SHOW_MENUBAR_ICON_CONFIG_KEY => {
+                            config.show_menubar_icon = matches!(right.trim(), "true")
                         }
                         _ => {}
                     }
@@ -232,6 +242,15 @@ impl ConfigStore {
         self.save();
     }
 
+    pub fn show_menubar_icon(&self) -> bool {
+        self.show_menubar_icon
+    }
+
+    pub fn set_show_menubar_icon(&mut self, flag: bool) {
+        self.show_menubar_icon = flag;
+        self.save();
+    }
+
     // Save config to file
     fn save(&mut self) {
         self.write_config_data().expect("Failed to write config");
@@ -247,3 +266,4 @@ const AUTOS_TOGGLE_ENABLED_CONFIG_KEY: &str = "is_auto_toggle_enabled";
 const MACROS_CONFIG_KEY: &str = "macros";
 const GOX_MODE_CONFIG_KEY: &str = "is_gox_mode_enabled";
 const ALLOWED_WORDS_CONFIG_KEY: &str = "allowed_words";
+const SHOW_MENUBAR_ICON_CONFIG_KEY: &str = "show_menubar_icon";

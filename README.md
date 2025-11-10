@@ -52,20 +52,27 @@ The source code can be compiled easily:
    ```
    git clone https://github.com/huytd/goxkey && cd goxkey
    ```
-4. Run the bundle command:
+4. Install the JavaScript dependencies and start the Tauri dev server:
 
    ```
-   cargo bundle
+   pnpm install
+   pnpm dev
    ```
 
-After that, you'll find the `Gõ Key.app` file in the `target/debug/bundle` folder. Copy it to your `/Applications` folder.
+   This starts the Vite + Tailwind UI with full Tauri backend hot reload. When you are ready to create a signed desktop bundle run:
 
-5. **(Important!):** Before you run the app, make you you already allowed Accessibility access for the app. Follow the [guide in the Wiki](https://github.com/huytd/goxkey/wiki/H%C6%B0%E1%BB%9Bng-d%E1%BA%ABn-s%E1%BB%ADa-l%E1%BB%97i-kh%C3%B4ng-g%C3%B5-%C4%91%C6%B0%E1%BB%A3c-ti%E1%BA%BFng-Vi%E1%BB%87t-tr%C3%AAn-macOS) to do so.
+   ```
+   pnpm build
+   ```
 
-Without this step, the app will crash and can't be use.
+   Release binaries are generated under `src-tauri/target/release/bundle`.
+
+5. **(Important!):** Before you run the app, make sure you already allowed Accessibility access for the app. Follow the [guide in the Wiki](https://github.com/huytd/goxkey/wiki/H%C6%B0%E1%BB%9Bng-d%E1%BA%ABn-s%E1%BB%ADa-l%E1%BB%97i-kh%C3%B4ng-g%C3%B5-%C4%91%C6%B0%E1%BB%A3c-ti%E1%BA%BFng-Vi%E1%BB%87t-tr%C3%AAn-macOS) to do so. Without this step, the app will crash and can't be used.
 
 ## Dependencies
 
+- [Tauri 2.5.x](https://tauri.app/) for the desktop shell, system tray and bundling
+- [Vite](https://vitejs.dev/) + [React](https://react.dev/) + [Tailwind CSS](https://tailwindcss.com/) for the control panel UI
 - [core-foundation](https://crates.io/crates/core-foundation), [core-graphics](https://crates.io/crates/core-graphics): for event handling on macOS
 - [vi-rs](https://github.com/zerox-dg/vi-rs): the Vietnamese Input Engine
 
@@ -74,4 +81,3 @@ Without this step, the app will crash and can't be use.
 Do you know how to type gõkey in Telex?
 
 Do this: `gox<cmd>key`
-

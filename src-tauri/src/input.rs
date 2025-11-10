@@ -1,17 +1,13 @@
 use std::collections::BTreeMap;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
-use druid::{Data, Target};
 use log::debug;
 use once_cell::sync::{Lazy, OnceCell};
 use rdev::{Keyboard, KeyboardState};
 use vi::TransformResult;
 
 use crate::platform::{get_active_app_name, KeyModifier};
-use crate::{
-    config::CONFIG_MANAGER, hotkey::Hotkey, platform::is_in_text_selection, ui::UPDATE_UI,
-    UI_EVENT_SINK,
-};
+use crate::{config::CONFIG_MANAGER, events, hotkey::Hotkey, platform::is_in_text_selection};
 
 // According to Google search, the longest possible Vietnamese word
 // is "nghiêng", which is 7 letters long. Add a little buffer for
@@ -122,7 +118,7 @@ pub fn rebuild_keyboard_layout_map() {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(PartialEq, Eq, Data, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum TypingMethod {
     VNI,
     Telex,
@@ -208,6 +204,10 @@ impl InputState {
         Some(())
     }
 
+    pub fn active_app(&self) -> &str {
+        &self.active_app
+    }
+
     pub fn set_temporary_disabled(&mut self) {
         self.temporary_disabled = true;
     }
@@ -277,9 +277,7 @@ impl InputState {
             .lock()
             .unwrap()
             .set_method(&method.to_string());
-        if let Some(event_sink) = UI_EVENT_SINK.get() {
-            _ = event_sink.submit_command(UPDATE_UI, (), Target::Auto);
-        }
+        events::emit_state_changed();
     }
 
     pub fn get_method(&self) -> TypingMethod {
@@ -289,9 +287,7 @@ impl InputState {
     pub fn set_hotkey(&mut self, key_sequence: &str) {
         self.hotkey = Hotkey::from_str(key_sequence);
         CONFIG_MANAGER.lock().unwrap().set_hotkey(key_sequence);
-        if let Some(event_sink) = UI_EVENT_SINK.get() {
-            _ = event_sink.submit_command(UPDATE_UI, (), Target::Auto);
-        }
+        events::emit_state_changed();
     }
 
     pub fn get_hotkey(&self) -> &Hotkey {
@@ -308,6 +304,7 @@ impl InputState {
             .lock()
             .unwrap()
             .set_auto_toggle_enabled(self.is_auto_toggle_enabled);
+        events::emit_state_changed();
     }
 
     pub fn is_macro_enabled(&self) -> bool {
@@ -320,6 +317,7 @@ impl InputState {
             .lock()
             .unwrap()
             .set_macro_enabled(self.is_macro_enabled);
+        events::emit_state_changed();
     }
 
     pub fn get_macro_table(&self) -> &BTreeMap<String, String> {
@@ -329,6 +327,7 @@ impl InputState {
     pub fn delete_macro(&mut self, from: &String) {
         self.macro_table.remove(from);
         CONFIG_MANAGER.lock().unwrap().delete_macro(from);
+        events::emit_state_changed();
     }
 
     pub fn add_macro(&mut self, from: String, to: String) {
@@ -337,9 +336,10 @@ impl InputState {
             .unwrap()
             .add_macro(from.clone(), to.clone());
         self.macro_table.insert(from, to);
+        events::emit_state_changed();
     }
 
-    pub fn should_transform_keys(&self, c: &char) -> bool {
+    pub fn should_transform_keys(&self, _c: &char) -> bool {
         self.enabled
     }
 
