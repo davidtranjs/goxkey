@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { FormEvent } from "react"
-import { listen } from "@tauri-apps/api/event"
+import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 
 import "./index.css"
 import { ipc, type UiState } from "./lib"
@@ -32,20 +32,46 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => {
-    ipc.getState().then((initialState) => {
-      stateRef.current = initialState;
-      setState(initialState);
-    }).catch(console.error);
-    
-    const unlistenPromise = listen<UiState>("state-changed", (event) => {
-      stateRef.current = event.payload;
-      setState(event.payload);
-    });
-    return () => {
-      unlistenPromise.then((unlisten) => unlisten());
-    };
+  const refreshState = useCallback(async () => {
+    try {
+      const nextState = await ipc.getState();
+      stateRef.current = nextState;
+      setState(nextState);
+    } catch (error) {
+      console.error("Failed to refresh state:", error);
+    }
   }, []);
+
+  useEffect(() => {
+    refreshState();
+    let unlisten: UnlistenFn | null = null;
+    let cancelled = false;
+
+    const register = async () => {
+      try {
+        const handler = await listen("state-changed", () => {
+          console.log("state-changed event received");
+          refreshState();
+        });
+        if (cancelled) {
+          handler();
+        } else {
+          unlisten = handler;
+        }
+      } catch (error) {
+        console.error("Failed to register state listener:", error);
+      }
+    };
+
+    register();
+
+    return () => {
+      cancelled = true;
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, [refreshState]);
 
   useEffect(() => {
     if (!state) return;
@@ -67,6 +93,19 @@ export default function App() {
       }
     }
   }, [state?.theme]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refreshState();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [refreshState]);
 
   if (!state) {
     return <LoadingScreen />;

@@ -107,9 +107,6 @@ fn event_handler(
 
         if event_type == EventTapType::FlagsChanged {
             if modifiers.is_empty() {
-                if HOTKEY_MATCHING && !HOTKEY_MATCHING_CIRCUIT_BREAK {
-                    toggle_vietnamese();
-                }
                 HOTKEY_MODIFIERS = KeyModifier::MODIFIER_NONE;
                 HOTKEY_MATCHING = false;
                 HOTKEY_MATCHING_CIRCUIT_BREAK = false;
@@ -118,13 +115,39 @@ fn event_handler(
             }
         }
 
-        let is_hotkey_matched = INPUT_STATE
-            .get_hotkey()
-            .is_match(HOTKEY_MODIFIERS, pressed_key_code);
+        // Check hotkey match using current modifiers for KeyDown events
+        let check_modifiers = if event_type == EventTapType::KeyDown {
+            modifiers
+        } else {
+            HOTKEY_MODIFIERS
+        };
+
+        let (is_hotkey_matched, hotkey_requires_key) = {
+            let hotkey = INPUT_STATE.get_hotkey();
+            (hotkey.is_match(check_modifiers, pressed_key_code), hotkey.keycode().is_some())
+        };
+        let triggered_by_key = event_type == EventTapType::KeyDown && pressed_key_code.is_some();
+        let triggered_by_flags = !hotkey_requires_key && event_type == EventTapType::FlagsChanged;
+
+        if is_hotkey_matched && !HOTKEY_MATCHING && (triggered_by_key || triggered_by_flags) {
+            log::debug!(
+                "Global hotkey matched via {:?} (key_required: {})",
+                event_type,
+                hotkey_requires_key
+            );
+            toggle_vietnamese();
+            HOTKEY_MATCHING = true;
+            if triggered_by_key {
+                return true;
+            }
+        }
+
         if HOTKEY_MATCHING && !is_hotkey_matched {
             HOTKEY_MATCHING_CIRCUIT_BREAK = true;
         }
-        HOTKEY_MATCHING = is_hotkey_matched;
+        if !pressed_key_code.is_some() {
+            HOTKEY_MATCHING = is_hotkey_matched;
+        }
 
         match pressed_key {
             Some(pressed_key) => match pressed_key {
