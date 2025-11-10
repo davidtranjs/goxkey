@@ -2,7 +2,7 @@
 
 use std::env::current_exe;
 use std::path::Path;
-use std::{env, path::PathBuf, ptr};
+use std::{env, ffi::c_void, path::PathBuf, ptr};
 
 mod macos_ext;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
@@ -47,6 +47,12 @@ pub const SYMBOL_SHIFT: &str = "⇧";
 pub const SYMBOL_CTRL: &str = "⌃";
 pub const SYMBOL_SUPER: &str = "⌘";
 pub const SYMBOL_ALT: &str = "⌥";
+
+const HOTKEY_SIGNATURE: u32 = u32::from_be_bytes(*b"GOXK");
+const CARBON_COMMAND: u32 = 1 << 8;
+const CARBON_SHIFT: u32 = 1 << 9;
+const CARBON_OPTION: u32 = 1 << 11;
+const CARBON_CONTROL: u32 = 1 << 12;
 
 impl From<CGEventType> for EventTapType {
     fn from(value: CGEventType) -> Self {
@@ -204,6 +210,138 @@ pub fn send_backspace(handle: Handle, count: usize) -> Result<(), ()> {
         unsafe {
             CGEventTapPostEvent(handle, event_bs_down);
             CGEventTapPostEvent(handle, event_bs_up);
+        }
+    }
+    Ok(())
+}
+
+#[repr(C)]
+struct EventHotKeyID {
+    signature: u32,
+    id: u32,
+}
+
+type EventTargetRef = *mut c_void;
+type EventHotKeyRef = *mut c_void;
+
+#[link(name = "Carbon", kind = "framework")]
+extern "C" {
+    fn RegisterEventHotKey(
+        key_code: u32,
+        modifiers: u32,
+        hot_key_id: EventHotKeyID,
+        target: EventTargetRef,
+        options: u32,
+        reference: *mut EventHotKeyRef,
+    ) -> i32;
+    fn UnregisterEventHotKey(reference: EventHotKeyRef) -> i32;
+    fn GetEventDispatcherTarget() -> EventTargetRef;
+}
+
+fn modifiers_to_carbon_bits(modifiers: KeyModifier) -> u32 {
+    let mut bits = 0;
+    if modifiers.is_super() {
+        bits |= CARBON_COMMAND;
+    }
+    if modifiers.is_shift() {
+        bits |= CARBON_SHIFT;
+    }
+    if modifiers.is_alt() {
+        bits |= CARBON_OPTION;
+    }
+    if modifiers.is_control() {
+        bits |= CARBON_CONTROL;
+    }
+    bits
+}
+
+fn char_to_hotkey_code(key: char) -> Option<u32> {
+    if key == KEY_ENTER {
+        return Some(36);
+    }
+    if key == KEY_SPACE {
+        return Some(49);
+    }
+    if key == KEY_TAB {
+        return Some(48);
+    }
+    if key == KEY_DELETE {
+        return Some(51);
+    }
+    if key == KEY_ESCAPE {
+        return Some(53);
+    }
+    match key.to_ascii_lowercase() {
+        'a' => Some(0),
+        's' => Some(1),
+        'd' => Some(2),
+        'f' => Some(3),
+        'h' => Some(4),
+        'g' => Some(5),
+        'z' => Some(6),
+        'x' => Some(7),
+        'c' => Some(8),
+        'v' => Some(9),
+        'b' => Some(11),
+        'q' => Some(12),
+        'w' => Some(13),
+        'e' => Some(14),
+        'r' => Some(15),
+        'y' => Some(16),
+        't' => Some(17),
+        'o' => Some(31),
+        'u' => Some(32),
+        'i' => Some(34),
+        'p' => Some(35),
+        'l' => Some(37),
+        'j' => Some(38),
+        'k' => Some(40),
+        'n' => Some(45),
+        'm' => Some(46),
+        '1' => Some(18),
+        '2' => Some(19),
+        '3' => Some(20),
+        '4' => Some(21),
+        '6' => Some(22),
+        '5' => Some(23),
+        '9' => Some(25),
+        '7' => Some(26),
+        '8' => Some(28),
+        '0' => Some(29),
+        '-' => Some(27),
+        '[' => Some(33),
+        ']' => Some(30),
+        ';' => Some(41),
+        ',' => Some(43),
+        '=' => Some(24),
+        '\\' => Some(42),
+        '/' => Some(44),
+        '\'' => Some(39),
+        '.' => Some(47),
+        _ => None,
+    }
+}
+
+pub fn check_hotkey_conflict(modifiers: KeyModifier, key: Option<char>) -> Result<(), String> {
+    let key_char = key.ok_or_else(|| "Hotkey needs a key".to_string())?;
+    let key_code = char_to_hotkey_code(key_char).ok_or_else(|| "Unsupported key".to_string())?;
+    let modifier_bits = modifiers_to_carbon_bits(modifiers);
+    unsafe {
+        let target = GetEventDispatcherTarget();
+        if target.is_null() {
+            return Err("Event dispatcher unavailable".to_string());
+        }
+        let mut reference: EventHotKeyRef = ptr::null_mut();
+        let hot_key_id = EventHotKeyID {
+            signature: HOTKEY_SIGNATURE,
+            id: 1,
+        };
+        let status = RegisterEventHotKey(key_code, modifier_bits, hot_key_id, target, 0, &mut reference);
+        if status != 0 {
+            return Err(format!("Hotkey unavailable (code {status})"));
+        }
+        if !reference.is_null() {
+            let _ = UnregisterEventHotKey(reference);
         }
     }
     Ok(())

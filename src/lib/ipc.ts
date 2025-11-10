@@ -12,6 +12,12 @@ export type HotkeyState = {
   capslockKey: boolean;
 };
 
+export type HotkeyValidation = {
+  isValid: boolean;
+  hasConflict: boolean;
+  message?: string;
+};
+
 export type MacroEntry = {
   source: string;
   target: string;
@@ -56,6 +62,9 @@ export const ipc = {
 
   setHotkey: (hotkey: string) =>
     invokeCommand<UiState>("set_hotkey", { hotkey }),
+
+  checkHotkey: (hotkey: string) =>
+    invokeCommand<HotkeyValidation>("check_hotkey", { hotkey }),
 
   setAutoToggle: (enabled: boolean) =>
     invokeCommand<UiState>("set_auto_toggle", { enabled }),

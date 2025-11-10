@@ -46,6 +46,14 @@ impl Hotkey {
     pub fn inner(&self) -> (KeyModifier, Option<char>) {
         (self.modifiers, self.keycode)
     }
+
+    pub fn modifiers(&self) -> KeyModifier {
+        self.modifiers
+    }
+
+    pub fn keycode(&self) -> Option<char> {
+        self.keycode
+    }
 }
 
 impl Display for Hotkey {

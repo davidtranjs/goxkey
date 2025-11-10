@@ -10,10 +10,12 @@ mod state;
 
 use std::thread;
 
+use crate::hotkey::Hotkey;
 use input::{
     rebuild_keyboard_layout_map, HOTKEY_MATCHING, HOTKEY_MATCHING_CIRCUIT_BREAK, HOTKEY_MODIFIERS,
     INPUT_STATE,
 };
+use serde::Serialize;
 use platform::{
     add_app_change_callback, ensure_accessibility_permission, run_event_listener, send_backspace,
     send_string, EventTapType, Handle, KeyModifier, PressedKey, KEY_DELETE, KEY_ENTER, KEY_ESCAPE,
@@ -234,6 +236,14 @@ fn spawn_event_sources() {
     });
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct HotkeyValidation {
+    is_valid: bool,
+    has_conflict: bool,
+    message: Option<String>,
+}
+
 #[tauri::command]
 fn get_state() -> UiState {
     events::current_state()
@@ -257,6 +267,35 @@ fn set_typing_method(method: TypingMethodDto) -> UiState {
     }
     events::emit_state_changed();
     events::current_state()
+}
+
+#[tauri::command]
+fn check_hotkey(hotkey: String) -> HotkeyValidation {
+    if hotkey.trim().is_empty() {
+        return HotkeyValidation {
+            is_valid: false,
+            has_conflict: false,
+            message: Some("Hotkey cannot be empty".to_string()),
+        };
+    }
+    let parsed = Hotkey::from_str(&hotkey);
+    let (modifiers, key) = parsed.inner();
+    match platform::check_hotkey_conflict(modifiers, key) {
+        Ok(()) => HotkeyValidation {
+            is_valid: true,
+            has_conflict: false,
+            message: None,
+        },
+        Err(reason) => {
+            let invalid_causes = ["Hotkey needs a key", "Unsupported key"];
+            let is_invalid = invalid_causes.contains(&reason.as_str());
+            HotkeyValidation {
+                is_valid: !is_invalid,
+                has_conflict: !is_invalid,
+                message: Some(reason),
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -428,6 +467,7 @@ fn main() {
             get_state,
             set_enabled,
             set_typing_method,
+            check_hotkey,
             set_hotkey,
             set_auto_toggle,
             set_macro_enabled,

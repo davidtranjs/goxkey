@@ -1,6 +1,6 @@
 // TODO: Implement this
 
-use super::CallbackFn;
+use super::{CallbackFn, KeyModifier};
 
 pub const SYMBOL_SHIFT: &str = "⇧";
 pub const SYMBOL_CTRL: &str = "⌃";
@@ -37,4 +37,8 @@ pub fn update_launch_on_login(is_enable: bool) {
 
 pub fn is_launch_on_login() {
     todo!()
+}
+
+pub fn check_hotkey_conflict(_: KeyModifier, _: Option<char>) -> std::result::Result<(), String> {
+    Ok(())
 }
