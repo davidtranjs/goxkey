@@ -21,8 +21,6 @@ export default function App() {
   const stateRef = useRef<UiState | null>(null);
   const [macroSource, setMacroSource] = useState("");
   const [macroTarget, setMacroTarget] = useState("");
-  const [hotkeyInput, setHotkeyInput] = useState("");
-  const [isSavingHotkey, setIsSavingHotkey] = useState(false);
 
   const runCommand = useCallback(async (handler: () => Promise<UiState>) => {
     try {
@@ -70,14 +68,6 @@ export default function App() {
     }
   }, [state?.theme]);
 
-  const hotkeyDisplay = state?.hotkey.display;
-
-  useEffect(() => {
-    if (hotkeyDisplay !== undefined) {
-      setHotkeyInput(hotkeyDisplay);
-    }
-  }, [hotkeyDisplay]);
-
   if (!state) {
     return <LoadingScreen />;
   }
@@ -92,13 +82,8 @@ export default function App() {
     setMacroTarget("");
   };
 
-  const saveHotkey = async () => {
-    if (!hotkeyInput.trim()) {
-      return;
-    }
-    setIsSavingHotkey(true);
-    await runCommand(() => ipc.setHotkey(hotkeyInput.trim()));
-    setIsSavingHotkey(false);
+  const saveHotkey = async (hotkey: string) => {
+    await runCommand(() => ipc.setHotkey(hotkey));
   };
 
   return (
@@ -178,10 +163,7 @@ export default function App() {
                 </section>
 
                 <HotkeyConfig
-                  hotkeyInput={hotkeyInput}
                   currentHotkey={state.hotkey.display}
-                  isSaving={isSavingHotkey}
-                  onInputChange={setHotkeyInput}
                   onSave={saveHotkey}
                 />
 
