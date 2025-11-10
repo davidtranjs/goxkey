@@ -339,6 +339,17 @@ fn set_show_menubar_icon(app: AppHandle, enabled: bool) -> UiState {
     events::current_state()
 }
 
+#[tauri::command]
+fn set_theme(theme: String) -> UiState {
+    config::CONFIG_MANAGER
+        .lock()
+        .unwrap()
+        .set_theme(&theme);
+
+    events::emit_state_changed();
+    events::current_state()
+}
+
 fn show_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
@@ -423,7 +434,8 @@ fn main() {
             add_macro,
             delete_macro,
             set_launch_on_login,
-            set_show_menubar_icon
+            set_show_menubar_icon,
+            set_theme
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -63,6 +63,7 @@ pub struct UiState {
     pub accessibility_ready: bool,
     pub version: String,
     pub show_menubar_icon: bool,
+    pub theme: String,
 }
 
 impl UiState {
@@ -91,6 +92,10 @@ impl UiState {
                 .lock()
                 .map(|c| c.show_menubar_icon())
                 .unwrap_or(true);
+            let theme = CONFIG_MANAGER
+                .lock()
+                .map(|c| c.get_theme().to_string())
+                .unwrap_or_else(|_| "system".to_string());
 
             Self {
                 is_enabled: input_state.is_enabled(),
@@ -105,6 +110,7 @@ impl UiState {
                 accessibility_ready,
                 version: env!("CARGO_PKG_VERSION").to_string(),
                 show_menubar_icon,
+                theme,
             }
         }
     }

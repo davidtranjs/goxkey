@@ -25,6 +25,7 @@ pub struct ConfigStore {
     is_gox_mode_enabled: bool,
     allowed_words: Vec<String>,
     show_menubar_icon: bool,
+    theme: String,
 }
 
 fn parse_vec_string(line: String) -> Vec<String> {
@@ -94,6 +95,11 @@ impl ConfigStore {
             "{} = {}",
             SHOW_MENUBAR_ICON_CONFIG_KEY, self.show_menubar_icon
         )?;
+        writeln!(
+            file,
+            "{} = {}",
+            THEME_CONFIG_KEY, self.theme
+        )?;
         Ok(())
     }
 
@@ -109,6 +115,7 @@ impl ConfigStore {
             is_gox_mode_enabled: false,
             allowed_words: vec!["đc".to_string()],
             show_menubar_icon: true,
+            theme: "system".to_string(),
         };
 
         let config_path = ConfigStore::get_config_path();
@@ -141,6 +148,9 @@ impl ConfigStore {
                         }
                         SHOW_MENUBAR_ICON_CONFIG_KEY => {
                             config.show_menubar_icon = matches!(right.trim(), "true")
+                        }
+                        THEME_CONFIG_KEY => {
+                            config.theme = right.trim().to_string()
                         }
                         _ => {}
                     }
@@ -251,6 +261,15 @@ impl ConfigStore {
         self.save();
     }
 
+    pub fn get_theme(&self) -> &str {
+        &self.theme
+    }
+
+    pub fn set_theme(&mut self, theme: &str) {
+        self.theme = theme.to_string();
+        self.save();
+    }
+
     // Save config to file
     fn save(&mut self) {
         self.write_config_data().expect("Failed to write config");
@@ -267,3 +286,4 @@ const MACROS_CONFIG_KEY: &str = "macros";
 const GOX_MODE_CONFIG_KEY: &str = "is_gox_mode_enabled";
 const ALLOWED_WORDS_CONFIG_KEY: &str = "allowed_words";
 const SHOW_MENUBAR_ICON_CONFIG_KEY: &str = "show_menubar_icon";
+const THEME_CONFIG_KEY: &str = "theme";
