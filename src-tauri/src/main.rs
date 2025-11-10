@@ -439,11 +439,12 @@ fn main() {
             }
 
             // Build tray menu
+            let current_state = events::current_state();
             let tray_menu = events::build_tray_menu(&app.handle())?;
 
             // Create tray icon
             let _tray = TrayIconBuilder::with_id("main-tray")
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(events::tray_icon_for_state(&current_state))
                 .menu(&tray_menu)
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "vietnamese_mode" => {
