@@ -173,7 +173,7 @@ impl InputState {
             display_buffer: String::new(),
             method: TypingMethod::from_str(config.get_method()).unwrap(),
             hotkey: Hotkey::from_str(config.get_hotkey()),
-            enabled: true,
+            enabled: config.is_vietnamese_mode_enabled(),
             should_track: true,
             previous_word: String::new(),
             active_app: String::new(),
@@ -262,6 +262,7 @@ impl InputState {
         self.enabled = !self.enabled;
         self.temporary_disabled = false;
         let mut config = CONFIG_MANAGER.lock().unwrap();
+        config.set_vietnamese_mode_enabled(self.enabled);
         if self.enabled {
             config.add_vietnamese_app(&self.active_app);
         } else {

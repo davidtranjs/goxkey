@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "Gõ Gõ",
-  "version": "1.0",
+  "version": "1.0.0",
   "identifier": "com.goxgox.app",
   "build": {
     "beforeDevCommand": "pnpm run dev:ui",

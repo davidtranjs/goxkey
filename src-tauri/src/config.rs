@@ -26,6 +26,7 @@ pub struct ConfigStore {
     allowed_words: Vec<String>,
     show_menubar_icon: bool,
     theme: String,
+    is_vietnamese_mode_enabled: bool,
 }
 
 fn parse_vec_string(line: String) -> Vec<String> {
@@ -100,6 +101,11 @@ impl ConfigStore {
             "{} = {}",
             THEME_CONFIG_KEY, self.theme
         )?;
+        writeln!(
+            file,
+            "{} = {}",
+            VIETNAMESE_MODE_ENABLED_CONFIG_KEY, self.is_vietnamese_mode_enabled
+        )?;
         Ok(())
     }
 
@@ -116,6 +122,7 @@ impl ConfigStore {
             allowed_words: vec!["đc".to_string()],
             show_menubar_icon: true,
             theme: "system".to_string(),
+            is_vietnamese_mode_enabled: true,
         };
 
         let config_path = ConfigStore::get_config_path();
@@ -151,6 +158,9 @@ impl ConfigStore {
                         }
                         THEME_CONFIG_KEY => {
                             config.theme = right.trim().to_string()
+                        }
+                        VIETNAMESE_MODE_ENABLED_CONFIG_KEY => {
+                            config.is_vietnamese_mode_enabled = matches!(right.trim(), "true")
                         }
                         _ => {}
                     }
@@ -270,6 +280,15 @@ impl ConfigStore {
         self.save();
     }
 
+    pub fn is_vietnamese_mode_enabled(&self) -> bool {
+        self.is_vietnamese_mode_enabled
+    }
+
+    pub fn set_vietnamese_mode_enabled(&mut self, flag: bool) {
+        self.is_vietnamese_mode_enabled = flag;
+        self.save();
+    }
+
     // Save config to file
     fn save(&mut self) {
         self.write_config_data().expect("Failed to write config");
@@ -287,3 +306,4 @@ const GOX_MODE_CONFIG_KEY: &str = "is_gox_mode_enabled";
 const ALLOWED_WORDS_CONFIG_KEY: &str = "allowed_words";
 const SHOW_MENUBAR_ICON_CONFIG_KEY: &str = "show_menubar_icon";
 const THEME_CONFIG_KEY: &str = "theme";
+const VIETNAMESE_MODE_ENABLED_CONFIG_KEY: &str = "is_vietnamese_mode_enabled";

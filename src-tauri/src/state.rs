@@ -64,6 +64,7 @@ pub struct UiState {
     pub version: String,
     pub show_menubar_icon: bool,
     pub theme: String,
+    pub vietnamese_mode_enabled: bool,
 }
 
 impl UiState {
@@ -97,6 +98,11 @@ impl UiState {
                 .map(|c| c.get_theme().to_string())
                 .unwrap_or_else(|_| "system".to_string());
 
+            let vietnamese_mode_enabled = CONFIG_MANAGER
+                .lock()
+                .map(|c| c.is_vietnamese_mode_enabled())
+                .unwrap_or(true);
+
             Self {
                 is_enabled: input_state.is_enabled(),
                 typing_method: input_state.get_method().into(),
@@ -111,6 +117,7 @@ impl UiState {
                 version: env!("CARGO_PKG_VERSION").to_string(),
                 show_menubar_icon,
                 theme,
+                vietnamese_mode_enabled,
             }
         }
     }
