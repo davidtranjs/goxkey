@@ -195,6 +195,30 @@ export default function App() {
                       />
                     </Card>
                   </section>
+
+                  <footer className="mt-6 pb-6 flex flex-wrap gap-4 justify-center">
+                    <button
+                      onClick={() => ipc.openUrl("https://goxgox.davidtran.dev?ref=macos_app")}
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                      aria-label="Go to homepage"
+                    >
+                      🏡
+                    </button>
+                    <button
+                      onClick={() => ipc.openUrl("https://github.com/davidtranjs/goxgox")}
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                      aria-label="Report issues"
+                    >
+                      🐛
+                    </button>
+                    <button
+                      onClick={() => ipc.openUrl("https://goxgox.davidtran.dev/donate?ref=macos_app")}
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                      aria-label="Donate"
+                    >
+                      📈
+                    </button>
+                  </footer>
                 </>
               )}
             </div>

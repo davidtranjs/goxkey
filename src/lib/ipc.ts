@@ -114,4 +114,6 @@ export const ipc = {
     invokeCommand<UiState>("set_open_window_on_launch", { enabled }),
 
   searchApps: (query?: string) => invokeCommand<AppInfo[]>("search_apps", { query }),
+
+  openUrl: (url: string) => invokeCommand<void>("open_url", { url }),
 };

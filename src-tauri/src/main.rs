@@ -9,6 +9,7 @@ mod scripting;
 mod state;
 mod apps;
 
+use std::process::Command;
 use std::thread;
 
 use crate::apps::AppInfo;
@@ -466,6 +467,22 @@ fn set_open_window_on_launch(enabled: bool) -> UiState {
     events::current_state()
 }
 
+#[tauri::command]
+fn open_url(url: String) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = Command::new("open").arg(&url).spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = Command::new("xdg-open").arg(&url).spawn();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let _ = Command::new("cmd").args(["/C", "start", "", &url]).spawn();
+    }
+}
+
 fn show_main_window(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
@@ -588,7 +605,8 @@ fn main() {
             set_language,
             set_exclude_apps_enabled,
             set_open_window_on_launch,
-            search_apps
+            search_apps,
+            open_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
