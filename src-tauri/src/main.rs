@@ -446,7 +446,21 @@ fn search_apps(query: Option<String>) -> Vec<AppInfo> {
     apps::search_apps(query.as_deref())
 }
 
+#[tauri::command]
+fn set_open_window_on_launch(enabled: bool) -> UiState {
+    config::CONFIG_MANAGER
+        .lock()
+        .unwrap()
+        .set_open_window_on_launch(enabled);
+    events::emit_state_changed();
+    events::current_state()
+}
+
 fn show_main_window(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        platform::set_background_app();
+    }
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();
@@ -468,9 +482,28 @@ fn main() {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();
+                #[cfg(target_os = "macos")]
+                {
+                    platform::set_background_app();
+                }
             }
         })
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                platform::set_background_app();
+            }
+            let open_window_on_launch = config::CONFIG_MANAGER
+                .lock()
+                .map(|c| c.open_window_on_launch())
+                .unwrap_or(false);
+            if let Some(window) = app.get_webview_window("main") {
+                if open_window_on_launch {
+                    let _ = window.show();
+                } else {
+                    let _ = window.hide();
+                }
+            }
             events::register_app_handle(&app.handle());
             let has_permission = ensure_accessibility_permission();
             events::set_accessibility_ready(has_permission);
@@ -543,6 +576,7 @@ fn main() {
             set_show_menubar_icon,
             set_theme,
             set_exclude_apps_enabled,
+            set_open_window_on_launch,
             search_apps
         ])
         .run(tauri::generate_context!())

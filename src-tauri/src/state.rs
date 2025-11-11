@@ -68,6 +68,7 @@ pub struct UiState {
     pub vietnamese_mode_enabled: bool,
     pub excluded_apps: Vec<AppInfo>,
     pub exclude_apps_enabled: bool,
+    pub open_window_on_launch: bool,
 }
 
 impl UiState {
@@ -116,6 +117,11 @@ impl UiState {
                 .map(|c| c.is_exclude_apps_enabled())
                 .unwrap_or(true);
 
+            let open_window_on_launch = CONFIG_MANAGER
+                .lock()
+                .map(|c| c.open_window_on_launch())
+                .unwrap_or(false);
+
             Self {
                 is_enabled: input_state.is_enabled(),
                 typing_method: input_state.get_method().into(),
@@ -133,6 +139,7 @@ impl UiState {
                 vietnamese_mode_enabled,
                 excluded_apps,
                 exclude_apps_enabled,
+                open_window_on_launch,
             }
         }
     }

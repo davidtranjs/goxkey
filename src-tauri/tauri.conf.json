@@ -13,10 +13,11 @@
     "windows": [
       {
         "title": "Gõ Gõ",
-      "width": 600,
+        "width": 600,
         "height": 640,
         "resizable": false,
-        "fullscreen": false
+        "fullscreen": false,
+        "visible": false
       }
     ]
   },

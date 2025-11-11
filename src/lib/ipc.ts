@@ -46,6 +46,7 @@ export type UiState = {
   vietnameseModeEnabled: boolean;
   excludedApps: AppInfo[];
   excludeAppsEnabled: boolean;
+  openWindowOnLaunch: boolean;
 };
 
 async function invokeCommand<T>(
@@ -104,6 +105,9 @@ export const ipc = {
 
   removeExcludedApp: (path: string) =>
     invokeCommand<UiState>("remove_excluded_app", { path }),
+
+  setOpenWindowOnLaunch: (enabled: boolean) =>
+    invokeCommand<UiState>("set_open_window_on_launch", { enabled }),
 
   searchApps: (query?: string) => invokeCommand<AppInfo[]>("search_apps", { query }),
 };

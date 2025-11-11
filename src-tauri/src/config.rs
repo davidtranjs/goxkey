@@ -31,6 +31,7 @@ pub struct ConfigStore {
     is_vietnamese_mode_enabled: bool,
     excluded_apps: Vec<AppInfo>,
     exclude_apps_enabled: bool,
+    open_window_on_launch: bool,
 }
 
 fn parse_vec_string(line: String) -> Vec<String> {
@@ -121,6 +122,11 @@ impl ConfigStore {
             "{} = {}",
             EXCLUDE_APPS_ENABLED_CONFIG_KEY, self.exclude_apps_enabled
         )?;
+        writeln!(
+            file,
+            "{} = {}",
+            OPEN_WINDOW_ON_LAUNCH_CONFIG_KEY, self.open_window_on_launch
+        )?;
         Ok(())
     }
 
@@ -140,6 +146,7 @@ impl ConfigStore {
             is_vietnamese_mode_enabled: true,
             excluded_apps: Vec::new(),
             exclude_apps_enabled: true,
+            open_window_on_launch: false,
         };
 
         let config_path = ConfigStore::get_config_path();
@@ -184,6 +191,9 @@ impl ConfigStore {
                         }
                         EXCLUDE_APPS_ENABLED_CONFIG_KEY => {
                             config.exclude_apps_enabled = matches!(right.trim(), "true")
+                        }
+                        OPEN_WINDOW_ON_LAUNCH_CONFIG_KEY => {
+                            config.open_window_on_launch = matches!(right.trim(), "true")
                         }
                         _ => {}
                     }
@@ -336,6 +346,15 @@ impl ConfigStore {
         self.save();
     }
 
+    pub fn open_window_on_launch(&self) -> bool {
+        self.open_window_on_launch
+    }
+
+    pub fn set_open_window_on_launch(&mut self, flag: bool) {
+        self.open_window_on_launch = flag;
+        self.save();
+    }
+
     // Save config to file
     fn save(&mut self) {
         self.write_config_data().expect("Failed to write config");
@@ -356,3 +375,4 @@ const THEME_CONFIG_KEY: &str = "theme";
 const VIETNAMESE_MODE_ENABLED_CONFIG_KEY: &str = "is_vietnamese_mode_enabled";
 const EXCLUDED_APPS_CONFIG_KEY: &str = "excluded_apps";
 const EXCLUDE_APPS_ENABLED_CONFIG_KEY: &str = "exclude_apps_enabled";
+const OPEN_WINDOW_ON_LAUNCH_CONFIG_KEY: &str = "open_window_on_launch";

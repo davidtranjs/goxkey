@@ -14,6 +14,9 @@ pub use os::{
 };
 
 #[cfg(target_os = "macos")]
+pub use os::set_background_app;
+
+#[cfg(target_os = "macos")]
 pub use os::SystemTray;
 pub use os::SystemTrayMenuItemKey;
 

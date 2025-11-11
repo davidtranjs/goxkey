@@ -501,3 +501,10 @@ pub fn update_launch_on_login(is_enable: bool) -> Result<(), auto_launch::Error>
 pub fn is_launch_on_login() -> bool {
     AUTO_LAUNCH.is_enabled().unwrap()
 }
+
+pub fn set_background_app() {
+    unsafe {
+        let ns_app: id = msg_send![class!(NSApplication), sharedApplication];
+        let _: () = msg_send![ns_app, setActivationPolicy: 1];
+    }
+}

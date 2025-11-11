@@ -172,6 +172,17 @@ export default function App() {
                     />
 
                     <ToggleRow
+                      title="Mở cửa sổ khi khởi động"
+                      // description="Hiển thị cửa sổ khi mở app"
+                      checked={state.openWindowOnLaunch}
+                      onClick={() =>
+                        runCommand(() =>
+                          ipc.setOpenWindowOnLaunch(!state.openWindowOnLaunch)
+                        )
+                      }
+                    />
+
+                    <ToggleRow
                       title="Icon menubar"
                       description="Hiện icon trên menu"
                       checked={state.showMenubarIcon}
