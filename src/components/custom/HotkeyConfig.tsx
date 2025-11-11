@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../button";
 import { Card } from "../card";
 import { ipc, type HotkeyValidation } from "../../lib";
+import { useI18n } from "../../lib/i18n";
 
 type Props = {
   currentHotkey: string;
@@ -12,6 +13,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
   currentHotkey,
   onSave,
 }: Props) {
+  const { t } = useI18n();
   const [isRecording, setIsRecording] = useState(false);
   const [recordedKeys, setRecordedKeys] = useState<string[]>([]);
   const [hotkeyString, setHotkeyString] = useState("");
@@ -40,7 +42,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
           setValidation({
             isValid: false,
             hasConflict: false,
-            message: "Không thể kiểm tra phím tắt",
+            message: t.hotkey.invalid,
           });
         }
       };
@@ -162,14 +164,14 @@ export const HotkeyConfig = memo(function HotkeyConfig({
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[13px] text-gray-900 dark:text-gray-100 font-medium">
-              Phím tắt bật/tắt gõ Tiếng Việt
+              {t.hotkey.title}
             </p>
           </div>
 
           <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-3">
-            Hiện tại:{" "}
+            {t.hotkey.current}:{" "}
             <span className="text-gray-900 dark:text-gray-100 font-medium">
-              {currentHotkey || "Chưa đặt"}
+              {currentHotkey || t.hotkey.notSet}
             </span>
           </p>
 
@@ -188,7 +190,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
             {isRecording ? (
               <div className="text-center">
                 <p className="text-[11px] text-gray-600 dark:text-gray-300 mb-2">
-                  Nhấn tổ hợp phím bạn muốn sử dụng...
+                  {t.hotkey.recording}
                 </p>
                 {recordedKeys.length > 0 ? (
                   <div className="flex gap-1 items-center justify-center flex-wrap">
@@ -205,7 +207,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
                   </div>
                 ) : (
                   <div className="text-[12px] text-gray-400 dark:text-gray-500 animate-pulse">
-                    Đợi nhập...
+                    {t.hotkey.waiting}
                   </div>
                 )}
               </div>
@@ -228,16 +230,16 @@ export const HotkeyConfig = memo(function HotkeyConfig({
                   <div className="mt-2">
                     {validation.hasConflict ? (
                       <p className="text-[11px] text-red-600 dark:text-red-400">
-                        ⚠️ Phím tắt đang được dùng bởi hệ thống
+                        ⚠️ {t.hotkey.conflict}
                         {validation.message && ` (${validation.message})`}
                       </p>
                     ) : !validation.isValid ? (
                       <p className="text-[11px] text-orange-600 dark:text-orange-400">
-                        ⚠️ {validation.message || "Phím tắt không hợp lệ"}
+                        ⚠️ {validation.message || t.hotkey.invalid}
                       </p>
                     ) : (
                       <p className="text-[11px] text-green-600 dark:text-green-400">
-                        ✓ Phím tắt khả dụng
+                        ✓ {t.hotkey.available}
                       </p>
                     )}
                   </div>
@@ -245,7 +247,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
               </div>
             ) : (
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Nhấn "Ghi phím" để thiết lập phím tắt mới
+                {t.hotkey.pressRecord}
               </p>
             )}
           </div>
@@ -258,7 +260,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
                 size="sm"
                 className="flex-1 h-8 text-[11px]"
               >
-                🎙️ Ghi phím
+                🎙️ {t.hotkey.recordButton}
               </Button>
             )}
 
@@ -269,7 +271,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
                 variant="outline"
                 className="flex-1 h-8 text-[11px]"
               >
-                Dừng ghi
+                {t.hotkey.stopRecording}
               </Button>
             )}
 
@@ -281,7 +283,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
                   variant="outline"
                   className="flex-1 h-8 text-[11px]"
                 >
-                  Hủy
+                  {t.hotkey.cancel}
                 </Button>
                 <Button
                   onClick={handleSave}
@@ -294,7 +296,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
                   size="sm"
                   className="flex-1 h-8 text-[11px]"
                 >
-                  {isSaving ? "Đang lưu..." : "💾 Lưu"}
+                  {isSaving ? t.hotkey.saving : `💾 ${t.hotkey.save}`}
                 </Button>
               </>
             )}
@@ -302,8 +304,7 @@ export const HotkeyConfig = memo(function HotkeyConfig({
 
           {/* Help text */}
           <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-3 leading-relaxed">
-            Lưu ý: Phím tắt cần có ít nhất một phím modifier (⌘, ⌃, ⌥, ⇧) kết hợp với một phím khác.
-            Phím tắt sẽ được kiểm tra xung đột với các phím tắt hệ thống trước khi lưu.
+            {t.hotkey.help}
           </p>
         </div>
       </Card>

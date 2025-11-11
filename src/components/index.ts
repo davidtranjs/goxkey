@@ -4,7 +4,8 @@ export { ToggleRow } from "./custom/ToggleRow";
 export { MainToggle } from "./custom/MainToggle";
 export { TypingMethodSelector } from "./custom/TypingMethodSelector";
 export { HotkeyConfig } from "./custom/HotkeyConfig";
-export { ThemeSelector } from "./custom/ThemeSelector";
+export { ThemeSelector } from "./custom/ThemeSelector"
+export { LanguageSelector } from "./custom/LanguageSelector";
 export { MacroForm } from "./custom/MacroForm";
 export { MacroList } from "./custom/MacroList";
 export { ExcludedAppsSection } from "./custom/ExcludedAppsSection";

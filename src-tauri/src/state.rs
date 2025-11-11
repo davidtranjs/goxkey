@@ -69,6 +69,7 @@ pub struct UiState {
     pub excluded_apps: Vec<AppInfo>,
     pub exclude_apps_enabled: bool,
     pub open_window_on_launch: bool,
+    pub language: String,
 }
 
 impl UiState {
@@ -122,6 +123,11 @@ impl UiState {
                 .map(|c| c.open_window_on_launch())
                 .unwrap_or(false);
 
+            let language = CONFIG_MANAGER
+                .lock()
+                .map(|c| c.get_language().to_string())
+                .unwrap_or_else(|_| "vi".to_string());
+
             Self {
                 is_enabled: input_state.is_enabled(),
                 typing_method: input_state.get_method().into(),
@@ -140,6 +146,7 @@ impl UiState {
                 excluded_apps,
                 exclude_apps_enabled,
                 open_window_on_launch,
+                language,
             }
         }
     }

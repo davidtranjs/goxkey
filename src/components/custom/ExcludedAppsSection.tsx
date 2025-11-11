@@ -5,6 +5,7 @@ import { Input } from "../input"
 import { Button } from "../button"
 import { X } from "lucide-react"
 import { ipc, type AppInfo } from "../../lib"
+import { useI18n } from "../../lib/i18n"
 
 type Props = {
   excludeAppsEnabled: boolean
@@ -21,6 +22,7 @@ export const ExcludedAppsSection = memo(function ExcludedAppsSection({
   onAdd,
   onRemove,
 }: Props) {
+  const { t } = useI18n()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<AppInfo[]>([])
   const [loading, setLoading] = useState(false)
@@ -75,10 +77,10 @@ export const ExcludedAppsSection = memo(function ExcludedAppsSection({
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700/50">
           <div className="flex-1">
             <p className="text-[13px] text-gray-900 dark:text-gray-100">
-              Bỏ qua ứng dụng
+              {t.excludedApps.title}
             </p>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-              Không đổi kiểu gõ cho app đã chọn
+              {t.excludedApps.description}
             </p>
           </div>
           <Switch checked={excludeAppsEnabled} onCheckedChange={onToggle} />
@@ -86,11 +88,11 @@ export const ExcludedAppsSection = memo(function ExcludedAppsSection({
         <div className="px-4 py-3 space-y-3">
           <div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              Chọn ứng dụng
+              {t.excludedApps.selectApp}
             </p>
             <div className="relative mt-1">
               <Input
-                placeholder="Nhập tên app hoặc bundle id"
+                placeholder={t.excludedApps.placeholder}
                 value={query}
                 disabled={!excludeAppsEnabled}
                 onChange={(event) => setQuery(event.target.value)}
@@ -102,11 +104,11 @@ export const ExcludedAppsSection = memo(function ExcludedAppsSection({
                 <div className="absolute left-0 right-0 mt-1 rounded-md border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-[#1e1e1e] shadow-lg max-h-56 overflow-y-auto z-20">
                   {loading ? (
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 px-3 py-2">
-                      Đang tìm ứng dụng...
+                      {t.excludedApps.searching}
                     </p>
                   ) : availableResults.length === 0 ? (
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 px-3 py-2">
-                      Không tìm thấy ứng dụng phù hợp
+                      {t.excludedApps.noResults}
                     </p>
                   ) : (
                     availableResults.map((app) => (
@@ -133,11 +135,11 @@ export const ExcludedAppsSection = memo(function ExcludedAppsSection({
 
           <div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">
-              Đang bỏ qua
+              {t.excludedApps.currentlyExcluding}
             </p>
             {excludedApps.length === 0 ? (
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Chưa có ứng dụng nào
+                {t.excludedApps.none}
               </p>
             ) : (
               <div className="space-y-1.5 max-h-48 overflow-y-auto">

@@ -32,6 +32,7 @@ pub struct ConfigStore {
     excluded_apps: Vec<AppInfo>,
     exclude_apps_enabled: bool,
     open_window_on_launch: bool,
+    language: String,
 }
 
 fn parse_vec_string(line: String) -> Vec<String> {
@@ -127,6 +128,11 @@ impl ConfigStore {
             "{} = {}",
             OPEN_WINDOW_ON_LAUNCH_CONFIG_KEY, self.open_window_on_launch
         )?;
+        writeln!(
+            file,
+            "{} = {}",
+            LANGUAGE_CONFIG_KEY, self.language
+        )?;
         Ok(())
     }
 
@@ -147,6 +153,7 @@ impl ConfigStore {
             excluded_apps: Vec::new(),
             exclude_apps_enabled: true,
             open_window_on_launch: false,
+            language: "vi".to_string(),
         };
 
         let config_path = ConfigStore::get_config_path();
@@ -194,6 +201,9 @@ impl ConfigStore {
                         }
                         OPEN_WINDOW_ON_LAUNCH_CONFIG_KEY => {
                             config.open_window_on_launch = matches!(right.trim(), "true")
+                        }
+                        LANGUAGE_CONFIG_KEY => {
+                            config.language = right.trim().to_string()
                         }
                         _ => {}
                     }
@@ -355,6 +365,15 @@ impl ConfigStore {
         self.save();
     }
 
+    pub fn get_language(&self) -> &str {
+        &self.language
+    }
+
+    pub fn set_language(&mut self, language: &str) {
+        self.language = language.to_string();
+        self.save();
+    }
+
     // Save config to file
     fn save(&mut self) {
         self.write_config_data().expect("Failed to write config");
@@ -376,3 +395,4 @@ const VIETNAMESE_MODE_ENABLED_CONFIG_KEY: &str = "is_vietnamese_mode_enabled";
 const EXCLUDED_APPS_CONFIG_KEY: &str = "excluded_apps";
 const EXCLUDE_APPS_ENABLED_CONFIG_KEY: &str = "exclude_apps_enabled";
 const OPEN_WINDOW_ON_LAUNCH_CONFIG_KEY: &str = "open_window_on_launch";
+const LANGUAGE_CONFIG_KEY: &str = "language";

@@ -47,6 +47,7 @@ export type UiState = {
   excludedApps: AppInfo[];
   excludeAppsEnabled: boolean;
   openWindowOnLaunch: boolean;
+  language: string;
 };
 
 async function invokeCommand<T>(
@@ -93,6 +94,9 @@ export const ipc = {
 
   setTheme: (theme: string) =>
     invokeCommand<UiState>("set_theme", { theme }),
+
+  setLanguage: (language: string) =>
+    invokeCommand<UiState>("set_language", { language }),
 
   addMacro: (source: string, target: string) =>
     invokeCommand<UiState>("add_macro", { source, target }),

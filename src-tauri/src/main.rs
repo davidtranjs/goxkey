@@ -442,6 +442,16 @@ fn set_theme(theme: String) -> UiState {
 }
 
 #[tauri::command]
+fn set_language(language: String) -> UiState {
+    config::CONFIG_MANAGER
+        .lock()
+        .unwrap()
+        .set_language(&language);
+    events::emit_state_changed();
+    events::current_state()
+}
+
+#[tauri::command]
 fn search_apps(query: Option<String>) -> Vec<AppInfo> {
     apps::search_apps(query.as_deref())
 }
@@ -575,6 +585,7 @@ fn main() {
             set_launch_on_login,
             set_show_menubar_icon,
             set_theme,
+            set_language,
             set_exclude_apps_enabled,
             set_open_window_on_launch,
             search_apps

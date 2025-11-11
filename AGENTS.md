@@ -1,6 +1,7 @@
 - Do not add any comments to the code
 - Do not commit code
 - Do not create MD file to explain changes
+- Use import alias `@/` when importing files
 - For latest doc, use context7 MCP
 - Use PNPM as package manager
 - Run command `pnpm check` to verify the changes

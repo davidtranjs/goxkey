@@ -62,23 +62,45 @@ pub fn build_tray_menu(app: &AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>,
     build_tray_menu_internal(app, &state)
 }
 
+fn get_menu_label(label_type: &str, language: &str) -> &'static str {
+    match language {
+        "en" => match label_type {
+            "enable_vietnamese" => "Enable Vietnamese typing",
+            "disable_vietnamese" => "Disable Vietnamese typing",
+            "show_window" => "Show window",
+            "quit" => "Quit",
+            _ => "",
+        },
+        _ => match label_type {
+            "enable_vietnamese" => "Bật tiếng Việt",
+            "disable_vietnamese" => "Tắt tiếng Việt",
+            "show_window" => "Hiện cửa sổ",
+            "quit" => "Thoát",
+            _ => "",
+        },
+    }
+}
+
 fn build_tray_menu_internal(
     app: &AppHandle,
     state: &UiState,
 ) -> Result<tauri::menu::Menu<tauri::Wry>, tauri::Error> {
+    let language = state.language.as_str();
+    let vietnamese_mode_label = if state.is_enabled {
+        get_menu_label("disable_vietnamese", language)
+    } else {
+        get_menu_label("enable_vietnamese", language)
+    };
+
     let vietnamese_mode_item = tauri::menu::CheckMenuItemBuilder::with_id(
         "vietnamese_mode",
-        if state.is_enabled {
-            "Tắt tiếng Việt"
-        } else {
-            "Bật tiếng Việt"
-        },
+        vietnamese_mode_label,
     )
     .checked(state.is_enabled)
     .build(app)?;
 
-    let show_ui_item = tauri::menu::MenuItemBuilder::with_id("show_ui", "Hiện cửa sổ").build(app)?;
-    let quit_item = tauri::menu::MenuItemBuilder::with_id("quit", "Thoát").build(app)?;
+    let show_ui_item = tauri::menu::MenuItemBuilder::with_id("show_ui", get_menu_label("show_window", language)).build(app)?;
+    let quit_item = tauri::menu::MenuItemBuilder::with_id("quit", get_menu_label("quit", language)).build(app)?;
 
     tauri::menu::MenuBuilder::new(app)
         .item(&vietnamese_mode_item)

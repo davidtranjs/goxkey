@@ -2,6 +2,7 @@ import type { FormEvent } from "react"
 import { memo } from "react"
 import { Input } from "../input"
 import { Button } from "../button"
+import { useI18n } from "../../lib/i18n"
 
 type Props = {
   source: string
@@ -20,17 +21,19 @@ export const MacroForm = memo(function MacroForm({
   onTargetChange,
   onSubmit,
 }: Props) {
+  const { t } = useI18n()
+  
   return (
     <form className="flex gap-2 mb-3" onSubmit={onSubmit}>
       <Input
-        placeholder="từ"
+        placeholder={t.macro.sourcePlaceholder}
         value={source}
         onChange={(e) => onSourceChange(e.target.value)}
         disabled={!macroEnabled}
         className="flex-1 h-8 text-[11px] border-gray-300 dark:border-gray-600"
       />
       <Input
-        placeholder="thay thế"
+        placeholder={t.macro.targetPlaceholder}
         value={target}
         onChange={(e) => onTargetChange(e.target.value)}
         disabled={!macroEnabled}
@@ -42,7 +45,7 @@ export const MacroForm = memo(function MacroForm({
         size="sm"
         className="h-8 px-3 text-[11px]"
       >
-        Thêm
+        {t.macro.add}
       </Button>
     </form>
   )

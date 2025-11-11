@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 
 import "./index.css"
 import { ipc, type UiState } from "@/lib"
+import { I18nProvider, useI18n } from "@/lib/i18n"
 import {
   LoadingScreen,
   AccessibilityAlert,
@@ -11,6 +12,7 @@ import {
   MainToggle,
   HotkeyConfig,
   ThemeSelector,
+  LanguageSelector,
   MacroForm,
   MacroList,
   ExcludedAppsSection,
@@ -93,7 +95,7 @@ export default function App() {
         htmlElement.classList.remove("dark");
       }
     }
-  }, [state?.theme]);
+  }, [state]);
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -126,138 +128,189 @@ export default function App() {
     await runCommand(() => ipc.setHotkey(hotkey));
   };
 
+  const language = state.language || "vi";
+
   return (
-    <div className="h-screen bg-[#ececec] dark:bg-[#1e1e1e] flex">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e1e]">
-          <div className="max-w-3xl px-5 py-5">
-            {!state.accessibilityReady ? (
-              <AccessibilityAlert />
-            ) : (
-              <>
-                <MainToggle
-                  isEnabled={state.isEnabled}
-                  activeApp={state.activeApp}
-                  onToggle={() =>
-                    runCommand(() => ipc.setEnabled(!state.isEnabled))
-                  }
-                  typingMethod={state.typingMethod}
-                  onTypingMethodChange={(method) =>
-                    runCommand(() => ipc.setTypingMethod(method))
-                  }
-                />
+    <I18nProvider
+      defaultLanguage={language as "en" | "vi"}
+      onLanguageChange={(lang) => {
+        runCommand(() => ipc.setLanguage(lang));
+      }}
+    >
+      <div className="h-screen bg-[#ececec] dark:bg-[#1e1e1e] flex">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1e1e1e]">
+            <div className="max-w-3xl px-5 py-5">
+              {!state.accessibilityReady ? (
+                <AccessibilityAlert />
+              ) : (
+                <>
+                  <MainToggle
+                    isEnabled={state.isEnabled}
+                    activeApp={state.activeApp}
+                    onToggle={() =>
+                      runCommand(() => ipc.setEnabled(!state.isEnabled))
+                    }
+                    typingMethod={state.typingMethod}
+                    onTypingMethodChange={(method) =>
+                      runCommand(() => ipc.setTypingMethod(method))
+                    }
+                  />
 
-                <section className="mt-4">
-                  <Card className="border-gray-200 dark:border-gray-700/50 divide-y divide-gray-200 dark:divide-gray-700/50">
-                    <ToggleRow
-                      title="Tự đổi theo app"
-                      description="Chuyển Việt/Anh tự động"
-                      checked={state.autoToggleEnabled}
-                      onClick={() =>
-                        runCommand(() =>
-                          ipc.setAutoToggle(!state.autoToggleEnabled)
-                        )
-                      }
-                    />
+                  <section className="mt-4">
+                    <Card className="border-gray-200 dark:border-gray-700/50 divide-y divide-gray-200 dark:divide-gray-700/50">
+                      <AppSettingsContent state={state} runCommand={runCommand} />
+                    </Card>
+                  </section>
 
-                    <ToggleRow
-                      title="Mở cùng macOS"
-                      description="Khởi động tự động"
-                      checked={state.launchOnLogin}
-                      onClick={() =>
-                        runCommand(() =>
-                          ipc.setLaunchOnLogin(!state.launchOnLogin)
-                        )
-                      }
-                    />
+                  <HotkeyConfig
+                    currentHotkey={state.hotkey.display}
+                    onSave={saveHotkey}
+                  />
 
-                    <ToggleRow
-                      title="Mở cửa sổ khi khởi động"
-                      // description="Hiển thị cửa sổ khi mở app"
-                      checked={state.openWindowOnLaunch}
-                      onClick={() =>
-                        runCommand(() =>
-                          ipc.setOpenWindowOnLaunch(!state.openWindowOnLaunch)
-                        )
-                      }
-                    />
+                  <ExcludedAppsSection
+                    excludeAppsEnabled={state.excludeAppsEnabled}
+                    excludedApps={state.excludedApps}
+                    onToggle={() =>
+                      runCommand(() =>
+                        ipc.setExcludeAppsEnabled(!state.excludeAppsEnabled)
+                      )
+                    }
+                    onAdd={(app) => runCommand(() => ipc.addExcludedApp(app))}
+                    onRemove={(path) =>
+                      runCommand(() => ipc.removeExcludedApp(path))
+                    }
+                  />
 
-                    <ToggleRow
-                      title="Icon menubar"
-                      description="Hiện icon trên menu"
-                      checked={state.showMenubarIcon}
-                      onClick={() =>
-                        runCommand(() =>
-                          ipc.setShowMenubarIcon(!state.showMenubarIcon)
-                        )
-                      }
-                    />
-
-                    <ToggleRow
-                      title="Macro"
-                      description="Bật/tắt thay thế từ"
-                      checked={state.macroEnabled}
-                      onClick={() =>
-                        runCommand(() =>
-                          ipc.setMacroEnabled(!state.macroEnabled)
-                        )
-                      }
-                    />
-
-                    <ThemeSelector
-                      theme={state.theme}
-                      onThemeChange={(theme) =>
-                        runCommand(() => ipc.setTheme(theme))
-                      }
-                    />
-                  </Card>
-                </section>
-
-                <HotkeyConfig
-                  currentHotkey={state.hotkey.display}
-                  onSave={saveHotkey}
-                />
-
-                <ExcludedAppsSection
-                  excludeAppsEnabled={state.excludeAppsEnabled}
-                  excludedApps={state.excludedApps}
-                  onToggle={() =>
-                    runCommand(() =>
-                      ipc.setExcludeAppsEnabled(!state.excludeAppsEnabled)
-                    )
-                  }
-                  onAdd={(app) => runCommand(() => ipc.addExcludedApp(app))}
-                  onRemove={(path) =>
-                    runCommand(() => ipc.removeExcludedApp(path))
-                  }
-                />
-
-                <section className="mt-4">
-                  <Card className="border-gray-200 dark:border-gray-700/50 px-4 py-3">
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2.5">
-                      Thêm từ viết tắt để tự động thay thế
-                    </p>
-                    <MacroForm
-                      source={macroSource}
-                      target={macroTarget}
-                      macroEnabled={state.macroEnabled}
-                      onSourceChange={setMacroSource}
-                      onTargetChange={setMacroTarget}
-                      onSubmit={handleMacroSubmit}
-                    />
-                    <MacroList
-                      macros={state.macros}
-                      onDelete={(source) =>
-                        runCommand(() => ipc.deleteMacro(source))
-                      }
-                    />
-                  </Card>
-                </section>
-              </>
-            )}
+                  <section className="mt-4">
+                    <Card className="border-gray-200 dark:border-gray-700/50 px-4 py-3">
+                      <MacroSectionContent
+                        state={state}
+                        macroSource={macroSource}
+                        macroTarget={macroTarget}
+                        onSourceChange={setMacroSource}
+                        onTargetChange={setMacroTarget}
+                        onSubmit={handleMacroSubmit}
+                        runCommand={runCommand}
+                      />
+                    </Card>
+                  </section>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </I18nProvider>
+  );
+}
+
+function AppSettingsContent({
+  state,
+  runCommand,
+}: {
+  state: UiState;
+  runCommand: (handler: () => Promise<UiState>) => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <>
+      <ToggleRow
+        title={t.settings.autoToggleByApp}
+        description={t.settings.autoToggleDescription}
+        checked={state.autoToggleEnabled}
+        onClick={() =>
+          runCommand(() => ipc.setAutoToggle(!state.autoToggleEnabled))
+        }
+      />
+
+      <ToggleRow
+        title={t.settings.launchOnLogin}
+        description={t.settings.launchOnLoginDescription}
+        checked={state.launchOnLogin}
+        onClick={() =>
+          runCommand(() => ipc.setLaunchOnLogin(!state.launchOnLogin))
+        }
+      />
+
+      <ToggleRow
+        title={t.settings.openWindowOnLaunch}
+        checked={state.openWindowOnLaunch}
+        onClick={() =>
+          runCommand(() => ipc.setOpenWindowOnLaunch(!state.openWindowOnLaunch))
+        }
+      />
+
+      <ToggleRow
+        title={t.settings.menubarIcon}
+        description={t.settings.menubarIconDescription}
+        checked={state.showMenubarIcon}
+        onClick={() =>
+          runCommand(() => ipc.setShowMenubarIcon(!state.showMenubarIcon))
+        }
+      />
+
+      <ToggleRow
+        title={t.settings.macro}
+        description={t.settings.macroDescription}
+        checked={state.macroEnabled}
+        onClick={() =>
+          runCommand(() => ipc.setMacroEnabled(!state.macroEnabled))
+        }
+      />
+
+      <ThemeSelector
+        theme={state.theme}
+        onThemeChange={(theme) => runCommand(() => ipc.setTheme(theme))}
+      />
+
+      <LanguageSelector
+        language={state.language || "vi"}
+        onLanguageChange={(language) =>
+          runCommand(() => ipc.setLanguage(language))
+        }
+      />
+    </>
+  );
+}
+
+function MacroSectionContent({
+  state,
+  macroSource,
+  macroTarget,
+  onSourceChange,
+  onTargetChange,
+  onSubmit,
+  runCommand,
+}: {
+  state: UiState;
+  macroSource: string;
+  macroTarget: string;
+  onSourceChange: (value: string) => void;
+  onTargetChange: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  runCommand: (handler: () => Promise<UiState>) => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <>
+      <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2.5">
+        {t.macro.addDescription}
+      </p>
+      <MacroForm
+        source={macroSource}
+        target={macroTarget}
+        macroEnabled={state.macroEnabled}
+        onSourceChange={onSourceChange}
+        onTargetChange={onTargetChange}
+        onSubmit={onSubmit}
+      />
+      <MacroList
+        macros={state.macros}
+        onDelete={(source) => runCommand(() => ipc.deleteMacro(source))}
+      />
+    </>
   );
 }
