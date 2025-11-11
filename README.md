@@ -15,10 +15,10 @@ This project is a fork of the original **Gõ Key** project (https://github.com/h
 
 **Gõ Gõ** - A Vietnamese input method editor.
 
-- :zap: Excellent performance (Gen Z translation: Blazing fast!)
-- :crab: Written completely in Rust.
-- :keyboard: Supported both Telex and VNI input method.
-- :sparkles: Focused on typing experience and features that you will use.
+- 🚀 Built with Tauri 2 and React.
+- 🎯 Supported both Telex and VNI input method.
+- 🔧 Allow exclude apps - no more switch EN/VN manually.
+- 💡 Focused on typing experience and features that you will use.
 
 ## Development
 
