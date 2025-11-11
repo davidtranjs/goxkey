@@ -1,8 +1,8 @@
 import { memo } from "react"
-import type { TypingMethod } from "../lib"
-import { Switch } from "./switch"
-import { Button } from "./button"
-import { Card } from "./card"
+import type { TypingMethod } from "../../lib"
+import { Switch } from "../switch"
+import { Button } from "../button"
+import { Card } from "../card"
 
 type Props = {
   isEnabled: boolean

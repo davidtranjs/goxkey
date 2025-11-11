@@ -1,10 +1,10 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react"
-import { Switch } from "./switch"
-import { Card } from "./card"
-import { Input } from "./input"
-import { Button } from "./button"
+import { Switch } from "../switch"
+import { Card } from "../card"
+import { Input } from "../input"
+import { Button } from "../button"
 import { X } from "lucide-react"
-import { ipc, type AppInfo } from "../lib"
+import { ipc, type AppInfo } from "../../lib"
 
 type Props = {
   excludeAppsEnabled: boolean

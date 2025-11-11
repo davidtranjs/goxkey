@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useCallback, useRef } from "react";
-import { Button } from "./button";
-import { Card } from "./card";
-import { ipc, type HotkeyValidation } from "../lib";
+import { Button } from "../button";
+import { Card } from "../card";
+import { ipc, type HotkeyValidation } from "../../lib";
 
 type Props = {
   currentHotkey: string;

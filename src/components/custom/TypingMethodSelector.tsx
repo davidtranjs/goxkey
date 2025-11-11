@@ -1,4 +1,4 @@
-import { Button } from "./button"
+import { Button } from "../button"
 
 type TypingMethod = "telex" | "vni"
 

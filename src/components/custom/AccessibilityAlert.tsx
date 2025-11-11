@@ -1,5 +1,5 @@
 import { memo } from "react"
-import { Alert, AlertTitle, AlertDescription } from "./alert"
+import { Alert, AlertTitle, AlertDescription } from "../alert"
 import { AlertTriangle } from "lucide-react"
 
 export const AccessibilityAlert = memo(function AccessibilityAlert() {

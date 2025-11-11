@@ -1,5 +1,5 @@
 import { memo } from "react"
-import { Button } from "./button"
+import { Button } from "../button"
 import { X } from "lucide-react"
 
 type MacroEntry = {

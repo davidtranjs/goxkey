@@ -3,7 +3,7 @@ import type { FormEvent } from "react"
 import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 
 import "./index.css"
-import { ipc, type UiState } from "./lib"
+import { ipc, type UiState } from "@/lib"
 import {
   LoadingScreen,
   AccessibilityAlert,
@@ -14,8 +14,8 @@ import {
   MacroForm,
   MacroList,
   ExcludedAppsSection,
-} from "./components"
-import { Card } from "./components/card"
+} from "@/components"
+import { Card } from "@/components/card"
 
 export default function App() {
   const [state, setState] = useState<UiState | null>(null);

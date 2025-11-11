@@ -1,7 +1,7 @@
 import type { FormEvent } from "react"
 import { memo } from "react"
-import { Input } from "./input"
-import { Button } from "./button"
+import { Input } from "../input"
+import { Button } from "../button"
 
 type Props = {
   source: string

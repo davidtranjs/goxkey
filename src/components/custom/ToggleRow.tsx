@@ -1,5 +1,5 @@
 import { memo } from "react"
-import { Switch } from "./switch"
+import { Switch } from "../switch"
 
 export const ToggleRow = memo(function ToggleRow({
   title,
